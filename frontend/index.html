@@ -15,11 +15,8 @@
       <span>RNABag</span>
     </a>
     <div class="nav-links">
-      <a href="#model">模型</a>
-      <a href="#tasks">任务</a>
-      <a href="#pipeline">流程</a>
-      <a href="index2.html">Balanced</a>
-      <a href="index3.html">Academic</a>
+      <a href="#tasks">功能展示</a>
+      <a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">论文链接</a>
     </div>
   </nav>
 
@@ -47,165 +44,135 @@
       </div>
     </section>
 
-    <section class="metric-band" aria-label="RNABag 关键参数">
-      <article>
-        <span>输入特征</span>
-        <strong>4096</strong>
-        <small>High Variability Genes</small>
-      </article>
-      <article>
-        <span>下游任务</span>
-        <strong>5</strong>
-        <small>Detection and classification heads</small>
-      </article>
-      <article>
-        <span>组织类别</span>
-        <strong>36</strong>
-        <small>Tissue origin labels</small>
-      </article>
-      <article>
-        <span>编码器</span>
-        <strong>8 x 8</strong>
-        <small>Layers x attention heads</small>
-      </article>
-    </section>
-
-    <section class="section" id="model" aria-labelledby="model-title">
-      <div class="section-heading">
-        <p class="eyebrow">Model Overview</p>
-        <h2 id="model-title">从 RNA-seq 表达到临床任务预测</h2>
-        <p>
-          当前展示页聚焦 RNABag 的项目本体，不接入在线推理服务。页面中的样本结果来自预置演示数据，用于说明模型输入、推理阶段和输出形式。
-        </p>
-      </div>
-
-      <div class="model-grid">
-        <article class="info-card">
-          <span class="card-kicker">Data</span>
-          <h3>表达谱标准化</h3>
-          <p>原始 FPKM 数据经过基因映射、样本转置、组织信息匹配、高变异基因过滤和 log1p 转换，形成推理所需的矩阵输入。</p>
-        </article>
-        <article class="info-card">
-          <span class="card-kicker">Backbone</span>
-          <h3>Transformer 编码器</h3>
-          <p>模型配置包含 128 维隐空间、8 层编码器和 8 个注意力头，以统一表示不同模态来源的转录组信号。</p>
-        </article>
-        <article class="info-card">
-          <span class="card-kicker">Heads</span>
-          <h3>任务专用检查点</h3>
-          <p>组织、血浆和血小板任务分别加载对应 checkpoint，输出二分类、36 类组织来源或 5 类肿瘤定位结果。</p>
-        </article>
-      </div>
-    </section>
-
     <section class="section task-section" id="tasks" aria-labelledby="tasks-title">
-      <div class="section-heading compact">
-        <p class="eyebrow">Task Showcase</p>
-        <h2 id="tasks-title">五个下游任务模块</h2>
+      <div class="feature-heading">
+        <p class="eyebrow">Feature Showcase</p>
+        <h2 id="tasks-title">功能预览</h2>
       </div>
 
-      <div class="task-layout">
-        <div class="task-tabs" role="tablist" aria-label="RNABag 下游任务">
-          <button class="task-tab is-active" type="button" role="tab" aria-selected="true" data-task="tissueCancer">
-            Tissue Cancer Detection
-          </button>
-          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="tissueOrigin">
-            Tissue Origin Identification
-          </button>
-          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="plasmaCancer">
-            Plasma Cancer Detection
-          </button>
-          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="plateletCancer">
-            Platelet Cancer Detection
-          </button>
-          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="plateletLocal">
-            Platelet Tumor Localization
-          </button>
-        </div>
+      <div class="showcase-grid three-col">
+        <aside class="task-select-panel" aria-label="RNABag 下游任务">
+          <span class="label">Functions</span>
+          <div class="task-switcher" role="tablist">
+            <button class="task-chip is-active" type="button" role="tab" aria-selected="true" data-task="tissueCancer">
+              <strong>Tissue cancer</strong>
+              <span>Healthy / Cancer</span>
+            </button>
+            <button class="task-chip" type="button" role="tab" aria-selected="false" data-task="tissueOrigin">
+              <strong>Tissue origin</strong>
+              <span>36 tissue classes</span>
+            </button>
+            <button class="task-chip" type="button" role="tab" aria-selected="false" data-task="plasmaCancer">
+              <strong>Plasma cancer</strong>
+              <span>Liquid biopsy</span>
+            </button>
+            <button class="task-chip" type="button" role="tab" aria-selected="false" data-task="plateletCancer">
+              <strong>Platelet cancer</strong>
+              <span>Thresholded output</span>
+            </button>
+            <button class="task-chip" type="button" role="tab" aria-selected="false" data-task="plateletLocal">
+              <strong>Platelet local</strong>
+              <span>5 tumor origins</span>
+            </button>
+          </div>
+        </aside>
 
-        <div class="task-panel" role="tabpanel" aria-live="polite">
-          <div class="panel-main">
-            <div class="panel-header">
-              <p class="eyebrow" id="task-modality">Tissue biopsy</p>
-              <h3 id="task-title">Tissue Cancer Detection</h3>
-              <p id="task-description">
-                基于组织 RNA 表达谱判断样本是否呈现癌症信号，输出 Healthy 或 Cancer。
-              </p>
+        <section class="model-input-panel" role="tabpanel" aria-live="polite">
+          <div class="task-copy">
+            <p class="eyebrow" id="task-modality">Tissue biopsy</p>
+            <h3 id="task-title">Tissue Cancer Detection</h3>
+            <p id="task-description">基于组织 RNA 表达谱判断样本是否呈现癌症信号，输出 Healthy 或 Cancer。</p>
+            <p id="task-detail" class="task-detail">该任务用于处理已经完成 FPKM 标准化的表达矩阵。</p>
+          </div>
+
+          <div class="input-rules">
+            <div>
+              <span class="label">Input rules</span>
+              <p>上传已完成 FPKM 标准化的 TSV。第一列建议为 <code>GeneID</code>，后续列为样本。</p>
             </div>
-
-            <div class="api-strip" aria-label="任务推理配置">
-              <span id="task-command">python infer_code/main.py --task tissue_cancer_detect --device cuda</span>
-            </div>
-
-            <div class="sample-block">
-              <div>
-                <span class="label">Sample input</span>
-                <pre id="sample-input">log1p_tissue.npy | 4096 genes | batch size 8</pre>
+            <div>
+              <span class="label">Data schema</span>
+              <div class="mini-schema" aria-label="TSV 数据结构">
+                <span>GeneID</span><span>Sample_001</span><span>Sample_002</span>
+                <span>100287102</span><span>0.000</span><span>1.324</span>
+                <span>653635</span><span>2.417</span><span>0.000</span>
               </div>
-              <div>
-                <span class="label">Checkpoint</span>
-                <pre id="checkpoint">Tissue_cancer_detect.ckpt</pre>
-              </div>
-            </div>
-
-            <div class="run-row">
-              <button class="button primary" id="run-demo" type="button">播放推理流程</button>
-              <button class="button secondary" id="reset-demo" type="button">重置</button>
             </div>
           </div>
 
-          <aside class="result-panel" aria-label="预置推理结果">
-            <div class="result-header">
-              <span class="label">Prediction preview</span>
-              <strong id="result-label">Cancer</strong>
+          <div class="file-tools">
+            <div class="tool-row">
+              <div>
+                <span class="label">Demo data</span>
+                <p>点击文件名下载 100 样本量 FPKM TSV 示例。</p>
+              </div>
+              <div class="sample-cards" id="sample-cards"></div>
             </div>
-            <div class="score-list" id="score-list"></div>
-            <div class="console" id="console-log" aria-live="polite"></div>
-          </aside>
-        </div>
-      </div>
-    </section>
 
-    <section class="section workflow-section" id="pipeline" aria-labelledby="pipeline-title">
-      <div class="section-heading">
-        <p class="eyebrow">Inference Pipeline</p>
-        <h2 id="pipeline-title">展示版保留真实工程路径</h2>
-        <p>
-          现阶段页面只做静态演示，但内容按 RNABag 仓库中的数据处理和推理入口组织，后续可以平滑接入 FastAPI 服务。
-        </p>
-      </div>
+            <div class="tool-row upload-row">
+              <div>
+                <span class="label">Upload TSV</span>
+                <p id="upload-status">上传 FPKM TSV 后，可选择发送到邮箱或浏览器下载副本。</p>
+              </div>
+              <label class="upload-button">
+                <input id="tsv-upload" type="file" accept=".tsv,text/tab-separated-values,text/plain">
+                <span>选择 TSV 文件</span>
+              </label>
+            </div>
+          </div>
+        </section>
 
-      <div class="timeline" aria-label="RNABag 推理流程">
-        <article>
-          <span>01</span>
-          <h3>Raw RNA-seq</h3>
-          <p>读取 FPKM、GeneID 到 Symbol 映射和样本组织信息。</p>
-        </article>
-        <article>
-          <span>02</span>
-          <h3>Feature Processing</h3>
-          <p>转置表达矩阵，生成标签，过滤 4096 个 HVG 并做 log1p 变换。</p>
-        </article>
-        <article>
-          <span>03</span>
-          <h3>Task Selection</h3>
-          <p>根据 tissue、plasma 或 platelet 任务选择 checkpoint 和标签映射。</p>
-        </article>
-        <article>
-          <span>04</span>
-          <h3>RNABag Inference</h3>
-          <p>通过 Transformer 编码器输出 logits，并转换为概率或类别名称。</p>
-        </article>
+        <aside class="output-panel" aria-label="图形化输出展示">
+          <div class="output-head">
+            <span class="label">Output preview</span>
+            <strong id="output-label">Cancer</strong>
+          </div>
+          <div class="output-chart" id="output-chart" aria-live="polite">
+            <div class="chart-empty">
+              <strong id="output-core">Tissue</strong>
+              <span>运行快速展示后，图形会根据 1-2 个样本的预置结果更新。</span>
+            </div>
+          </div>
+          <div class="quick-demo">
+            <div class="quick-demo-head">
+              <div>
+                <span class="label">Quick demo</span>
+                <p>用 1-2 个内置样本在网页端快速展示预置结果。</p>
+              </div>
+              <button class="button primary" id="run-demo" type="button">运行快速展示</button>
+            </div>
+            <div class="quick-results" id="quick-results" aria-live="polite"></div>
+          </div>
+        </aside>
       </div>
     </section>
 
   </main>
 
+  <dialog class="file-dialog" id="file-dialog" aria-labelledby="file-dialog-title">
+    <form method="dialog">
+      <div class="dialog-head">
+        <div>
+          <span class="label">TSV file action</span>
+          <h3 id="file-dialog-title">选择后续操作</h3>
+        </div>
+        <button class="dialog-close" type="submit" aria-label="关闭">×</button>
+      </div>
+      <div class="dialog-body">
+        <p id="file-dialog-summary">已选择 FPKM TSV 文件。</p>
+        <pre id="file-dialog-preview"></pre>
+      </div>
+      <div class="dialog-actions">
+        <button class="button primary" id="email-file" type="button">发送到邮箱</button>
+        <button class="button secondary" id="download-file" type="button">浏览器下载</button>
+      </div>
+      <p class="dialog-note">浏览器无法自动附加本地文件。发送邮件会打开邮件草稿，请手动添加该 TSV 附件。</p>
+    </form>
+  </dialog>
+
   <footer class="site-footer">
     <span>RNABag Showcase</span>
     <div class="footer-links">
-      <a href="index2.html">Balanced version</a>
-      <a href="index3.html">Academic version</a>
       <a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">
         bioRxiv paper
       </a>
