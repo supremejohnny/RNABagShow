@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RNABag Showcase | Transcriptome Foundation Model</title>
+  <meta name="description" content="RNABag 转录组基础模型展示页，覆盖组织、血浆、血小板等活检模态的精准肿瘤学下游任务。">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="主导航">
+    <a class="brand" href="#top" aria-label="RNABag 首页">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>RNABag</span>
+    </a>
+    <div class="nav-links">
+      <a href="#model">模型</a>
+      <a href="#tasks">任务</a>
+      <a href="#pipeline">流程</a>
+      <a href="index2.html">Balanced</a>
+      <a href="index3.html">Academic</a>
+    </div>
+  </nav>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Transcriptome Foundation Model for Precision Oncology</p>
+        <h1 id="hero-title">RNABag 转录组基础模型展示</h1>
+        <p class="hero-lede">
+          RNABag 面向不同活检模态的 RNA 表达谱，将 4096 个高变异基因映射到统一的 Transformer 表征空间，用于癌症检测、组织来源识别与血小板肿瘤定位等精准肿瘤学任务。
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#tasks">查看任务矩阵</a>
+          <a class="button secondary" href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">论文链接</a>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="RNA 表达矩阵和模型编码流程示意">
+        <canvas id="expression-canvas" width="720" height="480"></canvas>
+        <div class="visual-caption">
+          <span>FPKM / log1p expression</span>
+          <span>4096 HVGs</span>
+          <span>Transformer encoder</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="metric-band" aria-label="RNABag 关键参数">
+      <article>
+        <span>输入特征</span>
+        <strong>4096</strong>
+        <small>High Variability Genes</small>
+      </article>
+      <article>
+        <span>下游任务</span>
+        <strong>5</strong>
+        <small>Detection and classification heads</small>
+      </article>
+      <article>
+        <span>组织类别</span>
+        <strong>36</strong>
+        <small>Tissue origin labels</small>
+      </article>
+      <article>
+        <span>编码器</span>
+        <strong>8 x 8</strong>
+        <small>Layers x attention heads</small>
+      </article>
+    </section>
+
+    <section class="section" id="model" aria-labelledby="model-title">
+      <div class="section-heading">
+        <p class="eyebrow">Model Overview</p>
+        <h2 id="model-title">从 RNA-seq 表达到临床任务预测</h2>
+        <p>
+          当前展示页聚焦 RNABag 的项目本体，不接入在线推理服务。页面中的样本结果来自预置演示数据，用于说明模型输入、推理阶段和输出形式。
+        </p>
+      </div>
+
+      <div class="model-grid">
+        <article class="info-card">
+          <span class="card-kicker">Data</span>
+          <h3>表达谱标准化</h3>
+          <p>原始 FPKM 数据经过基因映射、样本转置、组织信息匹配、高变异基因过滤和 log1p 转换，形成推理所需的矩阵输入。</p>
+        </article>
+        <article class="info-card">
+          <span class="card-kicker">Backbone</span>
+          <h3>Transformer 编码器</h3>
+          <p>模型配置包含 128 维隐空间、8 层编码器和 8 个注意力头，以统一表示不同模态来源的转录组信号。</p>
+        </article>
+        <article class="info-card">
+          <span class="card-kicker">Heads</span>
+          <h3>任务专用检查点</h3>
+          <p>组织、血浆和血小板任务分别加载对应 checkpoint，输出二分类、36 类组织来源或 5 类肿瘤定位结果。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section task-section" id="tasks" aria-labelledby="tasks-title">
+      <div class="section-heading compact">
+        <p class="eyebrow">Task Showcase</p>
+        <h2 id="tasks-title">五个下游任务模块</h2>
+      </div>
+
+      <div class="task-layout">
+        <div class="task-tabs" role="tablist" aria-label="RNABag 下游任务">
+          <button class="task-tab is-active" type="button" role="tab" aria-selected="true" data-task="tissueCancer">
+            Tissue Cancer Detection
+          </button>
+          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="tissueOrigin">
+            Tissue Origin Identification
+          </button>
+          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="plasmaCancer">
+            Plasma Cancer Detection
+          </button>
+          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="plateletCancer">
+            Platelet Cancer Detection
+          </button>
+          <button class="task-tab" type="button" role="tab" aria-selected="false" data-task="plateletLocal">
+            Platelet Tumor Localization
+          </button>
+        </div>
+
+        <div class="task-panel" role="tabpanel" aria-live="polite">
+          <div class="panel-main">
+            <div class="panel-header">
+              <p class="eyebrow" id="task-modality">Tissue biopsy</p>
+              <h3 id="task-title">Tissue Cancer Detection</h3>
+              <p id="task-description">
+                基于组织 RNA 表达谱判断样本是否呈现癌症信号，输出 Healthy 或 Cancer。
+              </p>
+            </div>
+
+            <div class="api-strip" aria-label="任务推理配置">
+              <span id="task-command">python infer_code/main.py --task tissue_cancer_detect --device cuda</span>
+            </div>
+
+            <div class="sample-block">
+              <div>
+                <span class="label">Sample input</span>
+                <pre id="sample-input">log1p_tissue.npy | 4096 genes | batch size 8</pre>
+              </div>
+              <div>
+                <span class="label">Checkpoint</span>
+                <pre id="checkpoint">Tissue_cancer_detect.ckpt</pre>
+              </div>
+            </div>
+
+            <div class="run-row">
+              <button class="button primary" id="run-demo" type="button">播放推理流程</button>
+              <button class="button secondary" id="reset-demo" type="button">重置</button>
+            </div>
+          </div>
+
+          <aside class="result-panel" aria-label="预置推理结果">
+            <div class="result-header">
+              <span class="label">Prediction preview</span>
+              <strong id="result-label">Cancer</strong>
+            </div>
+            <div class="score-list" id="score-list"></div>
+            <div class="console" id="console-log" aria-live="polite"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section workflow-section" id="pipeline" aria-labelledby="pipeline-title">
+      <div class="section-heading">
+        <p class="eyebrow">Inference Pipeline</p>
+        <h2 id="pipeline-title">展示版保留真实工程路径</h2>
+        <p>
+          现阶段页面只做静态演示，但内容按 RNABag 仓库中的数据处理和推理入口组织，后续可以平滑接入 FastAPI 服务。
+        </p>
+      </div>
+
+      <div class="timeline" aria-label="RNABag 推理流程">
+        <article>
+          <span>01</span>
+          <h3>Raw RNA-seq</h3>
+          <p>读取 FPKM、GeneID 到 Symbol 映射和样本组织信息。</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Feature Processing</h3>
+          <p>转置表达矩阵，生成标签，过滤 4096 个 HVG 并做 log1p 变换。</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Task Selection</h3>
+          <p>根据 tissue、plasma 或 platelet 任务选择 checkpoint 和标签映射。</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>RNABag Inference</h3>
+          <p>通过 Transformer 编码器输出 logits，并转换为概率或类别名称。</p>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <span>RNABag Showcase</span>
+    <div class="footer-links">
+      <a href="index2.html">Balanced version</a>
+      <a href="index3.html">Academic version</a>
+      <a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">
+        bioRxiv paper
+      </a>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

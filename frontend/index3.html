@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RNABag Academic Model Card</title>
+  <meta name="description" content="RNABag academic model card with architecture parameters, task heads, checkpoints, and preprocessing details.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="academic.css">
+</head>
+<body>
+  <nav class="academic-nav" aria-label="版本导航">
+    <strong>RNABag / Academic Model Card</strong>
+    <div>
+      <a href="index.html">Showcase</a>
+      <a href="index2.html">Balanced</a>
+      <a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper</a>
+    </div>
+  </nav>
+
+  <main class="academic-page model-card">
+    <header class="paper-header">
+      <p class="kicker">Model Card</p>
+      <h1>RNABag: A Generalizable Transcriptome Foundation Model for Precision Oncology across Biopsy Modalities</h1>
+      <p>
+        本页按代码仓库中的推理配置整理 RNABag 的模型结构、输入构造、任务头、checkpoint 和数据处理路径。页面只保留模型简介与功能说明，不包含在线推理后端。
+      </p>
+    </header>
+
+    <div class="paper-layout">
+      <aside class="toc" aria-label="页面目录">
+        <a href="#summary">Model summary</a>
+        <a href="#architecture">Architecture parameters</a>
+        <a href="#tokenization">Input construction</a>
+        <a href="#tasks">Task heads</a>
+        <a href="#labels">Label spaces</a>
+        <a href="#preprocessing">Data preprocessing</a>
+      </aside>
+
+      <div class="paper-content">
+        <section class="summary-panel" id="summary">
+          <p class="kicker">Summary</p>
+          <h2>模型简介</h2>
+          <p>
+            RNABag 接收 log1p 转换后的 RNA 表达向量，以基因 ID 和表达值构造 token 序列，经 Transformer encoder 得到 CLS 表征，再由任务专用 MLP decoder 输出分类 logits。当前推理仓库覆盖 tissue、plasma、platelet 三类活检模态以及五个下游任务。
+          </p>
+          <ul class="dense-list">
+            <li><strong>Input genes:</strong> 4096 high variability genes</li>
+            <li><strong>Sequence length:</strong> 4099 tokens</li>
+            <li><strong>Backbone:</strong> 8 Transformer encoder blocks</li>
+            <li><strong>Prediction vector:</strong> CLS token output</li>
+            <li><strong>Implementation:</strong> PyTorch + Lightning DataModule</li>
+            <li><strong>Batch size:</strong> 8 during inference config</li>
+          </ul>
+        </section>
+
+        <section class="interactive-card compact-interaction" data-academic-demo aria-labelledby="academic-demo-title">
+          <div class="interactive-head">
+            <div>
+              <p class="kicker">Interactive Task Lens</p>
+              <h2 id="academic-demo-title">下游任务镜头</h2>
+            </div>
+            <strong data-demo-result>Cancer</strong>
+          </div>
+          <div class="task-switcher" role="tablist" aria-label="RNABag task preview">
+            <button type="button" class="is-active" data-academic-task="tissue_cancer_detect">tissue_cancer_detect</button>
+            <button type="button" data-academic-task="tissue_origin">tissue_origin</button>
+            <button type="button" data-academic-task="plasma_cancer_detect">plasma_cancer_detect</button>
+            <button type="button" data-academic-task="platelet_cancer_detect">platelet_cancer_detect</button>
+            <button type="button" data-academic-task="platelet_tumor_local">platelet_tumor_local</button>
+          </div>
+          <div class="demo-grid dense-demo">
+            <div>
+              <span class="table-label">Modality</span>
+              <strong data-demo-modality>Tissue</strong>
+            </div>
+            <div>
+              <span class="table-label">n_labels</span>
+              <strong data-demo-labels>2</strong>
+            </div>
+            <div>
+              <span class="table-label">Checkpoint</span>
+              <strong data-demo-checkpoint>Tissue_cancer_detect.ckpt</strong>
+            </div>
+            <div>
+              <span class="table-label">Output space</span>
+              <strong data-demo-output>Healthy / Cancer</strong>
+            </div>
+          </div>
+          <span class="code-block" data-demo-command>python infer_code/main.py --task tissue_cancer_detect --device cuda</span>
+        </section>
+
+        <section class="table-panel" id="architecture">
+          <p class="kicker">Architecture Parameters</p>
+          <h2>核心配置</h2>
+          <table class="config-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>total_ids</td>
+                <td>4097</td>
+                <td>4096 gene IDs plus index 0 for special tokens.</td>
+              </tr>
+              <tr>
+                <td>seq_len</td>
+                <td>4099</td>
+                <td>4096 gene tokens plus CLS and two total-expression summary tokens.</td>
+              </tr>
+              <tr>
+                <td>d_id</td>
+                <td>32</td>
+                <td>Gene ID embedding dimension.</td>
+              </tr>
+              <tr>
+                <td>d_value</td>
+                <td>4</td>
+                <td>Expression value projection dimension.</td>
+              </tr>
+              <tr>
+                <td>d_model</td>
+                <td>128</td>
+                <td>Transformer hidden dimension after fusion MLP.</td>
+              </tr>
+              <tr>
+                <td>d_ffn</td>
+                <td>512</td>
+                <td>Feed-forward dimension inside each encoder block.</td>
+              </tr>
+              <tr>
+                <td>n_layers</td>
+                <td>8</td>
+                <td>Number of Transformer encoder blocks.</td>
+              </tr>
+              <tr>
+                <td>n_heads</td>
+                <td>8</td>
+                <td>Multi-head self-attention heads per block.</td>
+              </tr>
+              <tr>
+                <td>dropout</td>
+                <td>0.1</td>
+                <td>Dropout used in MLP and attention blocks.</td>
+              </tr>
+              <tr>
+                <td>compress_d_model</td>
+                <td>128</td>
+                <td>Configured compressed embedding dimension.</td>
+              </tr>
+              <tr>
+                <td>compress_seq_len</td>
+                <td>1</td>
+                <td>Configured compressed sequence length.</td>
+              </tr>
+              <tr>
+                <td>cpu_workers</td>
+                <td>1</td>
+                <td>DataLoader worker count in config.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="table-panel" id="tokenization">
+          <p class="kicker">Input Construction</p>
+          <h2>输入序列与前向传播</h2>
+          <table class="config-table">
+            <tbody>
+              <tr>
+                <td>Gene IDs</td>
+                <td><code>np.arange(1, len(expr) + 1)</code>, then shuffled with expression values.</td>
+              </tr>
+              <tr>
+                <td>CLS token</td>
+                <td>Prepended as <code>gene=0, expr=0</code>.</td>
+              </tr>
+              <tr>
+                <td>Summary tokens</td>
+                <td>Appended as two <code>gene=0</code> tokens carrying <code>raw_sum</code> and <code>input_sum</code>.</td>
+              </tr>
+              <tr>
+                <td>Embedding fusion</td>
+                <td><code>EmbeddingInt(4097, 32)</code> + <code>Linear(1, 4)</code>, concatenated to 36 dimensions.</td>
+              </tr>
+              <tr>
+                <td>Dimension correction</td>
+                <td>MLP: <code>Linear(36,128) -> Dropout -> ReLU -> LayerNorm -> Linear(128,128)</code>.</td>
+              </tr>
+              <tr>
+                <td>Encoder block</td>
+                <td>Self-attention, residual, LayerNorm, FFN <code>128 -> 512 -> 128</code>, residual, LayerNorm.</td>
+              </tr>
+              <tr>
+                <td>Decoder input</td>
+                <td><code>encoder_output[:, 0, :]</code>, the CLS representation.</td>
+              </tr>
+              <tr>
+                <td>Decoder MLP</td>
+                <td><code>Linear(128,128) -> Dropout -> ReLU -> LayerNorm -> Linear(128,n_labels)</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="table-panel" id="tasks">
+          <p class="kicker">Task Heads and Checkpoints</p>
+          <h2>下游任务</h2>
+          <table class="task-table">
+            <thead>
+              <tr>
+                <th>Task name</th>
+                <th>Modality</th>
+                <th>n_labels</th>
+                <th>Checkpoint</th>
+                <th>Output</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-task-row="tissue_cancer_detect">
+                <td>tissue_cancer_detect</td>
+                <td>Tissue</td>
+                <td>2</td>
+                <td>Tissue_cancer_detect.ckpt, about 27M</td>
+                <td>Healthy / Cancer</td>
+              </tr>
+              <tr data-task-row="tissue_origin">
+                <td>tissue_origin</td>
+                <td>Tissue</td>
+                <td>36</td>
+                <td>Tissue_origin.ckpt, about 27M</td>
+                <td>36 tissue-origin classes</td>
+              </tr>
+              <tr data-task-row="plasma_cancer_detect">
+                <td>plasma_cancer_detect</td>
+                <td>Plasma</td>
+                <td>2</td>
+                <td>Plasma_cancer_detect.ckpt, about 27M</td>
+                <td>Healthy / Cancer</td>
+              </tr>
+              <tr data-task-row="platelet_cancer_detect">
+                <td>platelet_cancer_detect</td>
+                <td>Platelet</td>
+                <td>2</td>
+                <td>Platelet_cancer_detect.ckpt, about 28M</td>
+                <td>Healthy / Cancer with threshold rule</td>
+              </tr>
+              <tr data-task-row="platelet_tumor_local">
+                <td>platelet_tumor_local</td>
+                <td>Platelet</td>
+                <td>5</td>
+                <td>Platelet_tumor_local.ckpt, about 27M</td>
+                <td>HNSC / NSCLC / Glioma / PAAD / OV</td>
+              </tr>
+            </tbody>
+          </table>
+          <span class="code-block">python infer_code/main.py --task &lt;task_name&gt; --device cuda</span>
+        </section>
+
+        <section class="summary-panel" id="labels">
+          <p class="kicker">Label Spaces</p>
+          <h2>标签空间</h2>
+          <p><strong>Cancer detection:</strong> Healthy, Cancer.</p>
+          <p><strong>Platelet tumor localization:</strong> HNSC, NSCLC, Glioma, PAAD, OV.</p>
+          <p><strong>Tissue origin identification:</strong></p>
+          <div class="label-cloud" aria-label="36 tissue origin labels">
+            <span>Adipose_Tissue</span><span>Adrenal_Cortex</span><span>Adrenal_Gland</span><span>Bladder</span><span>Blood</span><span>Blood_Vessel</span><span>Bone_Marrow</span><span>Brain</span><span>Breast</span><span>Cervix</span><span>Colon</span><span>Esophagus</span><span>Eye_Uvea</span><span>Head_and_Neck</span><span>Heart</span><span>Kidney</span><span>Liver</span><span>Lung</span><span>Mesothelium</span><span>Muscle</span><span>Nerve</span><span>Ovary</span><span>Pancreas</span><span>Pituitary</span><span>Prostate</span><span>Salivary_Gland</span><span>Skin</span><span>Small_Intestine</span><span>Soft_Tissue</span><span>Spleen</span><span>Stomach</span><span>Testis</span><span>Thymus</span><span>Thyroid</span><span>Uterus</span><span>Vagina</span>
+          </div>
+        </section>
+
+        <section class="table-panel" id="preprocessing">
+          <p class="kicker">Preprocessing</p>
+          <h2>数据处理路径</h2>
+          <table class="config-table">
+            <tbody>
+              <tr>
+                <td>Required files</td>
+                <td><code>fpkm.tsv</code>, gene mapping TSV, <code>info.txt</code>, <code>tcga_hvg_gene_4096.txt</code>.</td>
+              </tr>
+              <tr>
+                <td>Gene mapping</td>
+                <td>Map GeneID to Symbol and remove the original GeneID column.</td>
+              </tr>
+              <tr>
+                <td>Matrix orientation</td>
+                <td>Transpose FPKM data so samples become rows and genes become columns.</td>
+              </tr>
+              <tr>
+                <td>HVG filtering</td>
+                <td>Keep the 4096 configured high-variability genes, filling missing genes with zero.</td>
+              </tr>
+              <tr>
+                <td>Transformation</td>
+                <td>Apply <code>np.log1p</code> to the selected expression matrix and save as `.npy`.</td>
+              </tr>
+              <tr>
+                <td>Inference loader</td>
+                <td>The inference dataset currently loads <code>log1p_tissue.npy</code> from the configured data directory.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="academic-footer">
+    Academic version. Parameters are summarized from the local RNABag inference code and README.
+  </footer>
+  <script src="academic.js"></script>
+</body>
+</html>
