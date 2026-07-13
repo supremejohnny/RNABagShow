@@ -61,44 +61,38 @@
     .status { display: flex; align-items: center; gap: 7px; }
     .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2ca66f; box-shadow: 0 0 0 4px rgba(44, 166, 111, .13); }
 
-    .hero {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 72px clamp(20px, 5vw, 72px) 56px;
-      display: grid;
-      grid-template-columns: minmax(0, .9fr) minmax(460px, 1.1fr);
-      align-items: center;
-      gap: clamp(48px, 7vw, 100px);
-      min-height: 700px; /* 设置最小高度 */
-    }
     .eyebrow { margin: 0 0 14px; color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
-    h1 { margin: 0; max-width: 650px; font-size: clamp(44px, 6vw, 76px); line-height: .98; letter-spacing: -.065em; }
-    .hero h1 em { display: inline-block; color: var(--green); font-style: normal; white-space: nowrap; }
-    .lede { margin: 28px 0 30px; max-width: 590px; color: var(--muted); font-size: 17px; }
-    .hero-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .overview-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 24px; }
     .button { border: 0; border-radius: 999px; padding: 12px 20px; font-weight: 750; cursor: pointer; text-decoration: none; transition: transform .18s, box-shadow .18s, background .18s; }
     .button:hover { transform: translateY(-2px); }
     .button.primary { color: #fff; background: var(--green); box-shadow: 0 10px 24px rgba(23, 107, 82, .2); }
     .button.primary:hover { background: var(--green-dark); }
     .button.ghost { color: var(--ink); background: transparent; border: 1px solid var(--line); }
 
-    .pipeline-card { background: #1f2f46; color: #fff; padding: 26px; border-radius: 14px; box-shadow: 0 28px 65px rgba(35, 48, 73, .18); overflow: hidden; position: relative; }
-    .pipeline-card::after { content: ""; position: absolute; width: 260px; height: 260px; background: rgba(121, 201, 191, .10); border-radius: 50%; right: -120px; top: -150px; }
-    .pipeline-head { display: flex; justify-content: space-between; color: rgba(255,255,255,.6); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-    .pipeline { margin-top: 28px; display: grid; grid-template-columns: 1fr 28px 1.05fr 28px 1.05fr; align-items: center; gap: 6px; }
-    .p-stack { display: grid; gap: 8px; }
-    .p-node { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07); border-radius: 12px; padding: 11px 12px; }
-    .p-node.active { background: var(--lime); color: #18212f; border-color: var(--lime); }
-    .p-node strong, .p-node span { display: block; }
-    .p-node strong { font-size: 12px; }
-    .p-node span { margin-top: 3px; color: inherit; opacity: .65; font-size: 10px; }
-    .p-arrow { color: rgba(255,255,255,.38); text-align: center; }
-    .encoder { text-align: center; padding: 25px 8px; }
-    .encoder-visual { width: 76px; height: 76px; margin: 0 auto 13px; border-radius: 50%; display: grid; place-items: center; background: repeating-radial-gradient(circle, var(--lime) 0 2px, transparent 3px 11px); border: 1px solid rgba(201,240,111,.5); }
-    .encoder-visual::after { content: "RNA"; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--lime); color: #18212f; font-size: 10px; font-weight: 900; }
-    .encoder strong { display: block; font-size: 13px; }
-    .encoder span { color: rgba(255,255,255,.55); font-size: 10px; }
-    .pipeline-foot { margin-top: 24px; padding-top: 18px; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.58); font-size: 11px; }
+    .model-overview { min-height: calc(100vh - 60px); padding: 32px clamp(20px, 5vw, 72px); display: flex; align-items: center; background: radial-gradient(circle at 86% 6%, rgba(36, 88, 211, .09), transparent 28rem), #fff; }
+    .overview-inner { width: 100%; max-width: 1296px; margin: 0 auto; display: grid; grid-template-columns: minmax(360px, .72fr) minmax(0, 1.28fr); align-items: center; gap: clamp(50px, 6vw, 92px); }
+    .overview-copy h1 { margin: 0; max-width: 720px; font-size: clamp(38px, 3.5vw, 50px); line-height: 1.03; letter-spacing: -.05em; }
+    .overview-body { display: grid; gap: 12px; margin-top: 22px; }
+    .overview-body p { max-width: 680px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.72; }
+    .overview-placeholder { color: #7f8998; }
+    .overview-points { display: grid; gap: 0; margin-top: 28px; border-top: 1px solid var(--line); }
+    .overview-point { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .overview-point > span { color: var(--green); font: 800 10px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .overview-point strong, .overview-point p { display: block; }
+    .overview-point strong { margin-bottom: 5px; font-size: 13px; }
+    .overview-point p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+    .overview-figure { margin: 0; min-width: 0; cursor: zoom-in; border-radius: 8px; transform: scale(1); transition: transform .24s cubic-bezier(.2, .8, .2, 1); will-change: transform; }
+    .overview-figure:hover { transform: scale(1.008); }
+    .overview-figure:focus-visible { outline: 3px solid rgba(36, 88, 211, .35); outline-offset: 6px; }
+    .overview-figure img { display: block; width: 100%; height: auto; background: #fff; }
+    .overview-figure figcaption { display: flex; justify-content: space-between; gap: 24px; margin-top: 12px; padding-top: 11px; color: var(--muted); border-top: 1px solid var(--line); font-size: 10px; }
+    .overview-figure figcaption span:last-child { flex: none; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+
+    body.overview-lightbox-open { overflow: hidden; }
+    .overview-lightbox { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 48px; background: rgba(9, 15, 26, .84); cursor: zoom-out; opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; }
+    .overview-lightbox.is-open { opacity: 1; visibility: visible; }
+    .overview-lightbox img { display: block; width: auto; height: auto; max-width: calc(100vw - 96px); max-height: calc(100vh - 96px); object-fit: contain; background: #fff; border-radius: 10px; box-shadow: 0 30px 90px rgba(0, 0, 0, .42); transform: scale(.98); transition: transform .2s ease; }
+    .overview-lightbox.is-open img { transform: scale(1); }
 
     .studio-wrap { background: #f1f4f8; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .studio { max-width: 1440px; margin: 0 auto; padding: 72px clamp(20px, 5vw, 72px) 84px; }
@@ -218,7 +212,7 @@
     footer { padding: 24px clamp(20px, 5vw, 72px); display: flex; justify-content: space-between; color: var(--muted); border-top: 1px solid var(--line); font-size: 11px; }
 
     body.lab-mode { min-width: 980px; background: #f1f4f8; }
-    body.lab-mode .nav, body.lab-mode .hero, body.lab-mode footer { display: none; }
+    body.lab-mode .nav, body.lab-mode .model-overview, body.lab-mode footer { display: none; }
     body.lab-mode .studio-wrap { min-height: 100vh; border: 0; }
     body.lab-mode .studio { max-width: none; min-height: 100vh; padding: 18px 28px 22px; }
     body.lab-mode .section-heading { margin-bottom: 12px; }
@@ -291,8 +285,8 @@
       .main-panel { padding-left: 20px; padding-right: 20px; }
     }
     @media (max-width: 1050px) {
-      .hero { grid-template-columns: 1fr; }
-      .pipeline-card { max-width: 760px; }
+      .overview-inner { grid-template-columns: 1fr; }
+      .overview-figure { margin-top: 38px; }
     }
     @media (max-width: 900px) {
       .workspace { grid-template-columns: 250px minmax(0,1fr); }
@@ -301,13 +295,9 @@
     }
     @media (max-width: 760px) {
       .nav-right .status { display: none; }
-      .hero { padding-top: 48px; }
-      h1 { font-size: 45px; }
-      .pipeline { grid-template-columns: 1fr; }
-      .p-arrow { transform: rotate(90deg); }
-      .p-stack { grid-template-columns: repeat(3, 1fr); }
-      .encoder { padding: 10px; }
-      .encoder-visual { width: 60px; height: 60px; }
+      .model-overview { padding-top: 60px; padding-bottom: 64px; }
+      .overview-lightbox { padding: 24px; }
+      .overview-lightbox img { max-width: calc(100vw - 48px); max-height: calc(100vh - 48px); }
       .section-heading { display: block; }
       .section-heading p:last-child { margin-top: 12px; }
       .stepbar { display: none; }
@@ -336,27 +326,27 @@
   </nav>
 
   <main id="top">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Transcriptome foundation model</p>
-        <h1>三类输入，<br><em>一条清晰路径。</em></h1>
-        <p class="lede">先告诉模型样本来自哪里，再选择该输入支持的任务。输入规则、格式示例与结果含义始终在同一视野内，减少试错。</p>
-        <div class="hero-actions"><a class="button primary" href="#workspace">开始快速演示</a><a class="button ghost" href="ranbag_lab.html">进入 RNABag Lab ↗</a></div>
-      </div>
-      <div class="pipeline-card" aria-label="RNABag 输入到任务的流程图">
-        <div class="pipeline-head"><span>Input → encoder → task</span><span>RNABag / 01</span></div>
-        <div class="pipeline">
-          <div class="p-stack">
-            <div class="p-node active"><strong>tissue</strong><span>组织 RNA</span></div>
-            <div class="p-node"><strong>plasma</strong><span>血浆 RNA</span></div>
-            <div class="p-node"><strong>platenet</strong><span>血小板 RNA</span></div>
+    <section class="model-overview" id="overview" aria-labelledby="overview-title">
+      <div class="overview-inner">
+        <div class="overview-copy">
+          <p class="eyebrow">RNABag · Transcriptome foundation model</p>
+          <h1 id="overview-title">一个模型，连接多种转录组任务</h1>
+          <div class="overview-body">
+            <p>RNABag 以 TCGA 与 GTEx 表达谱为基础，通过高变基因选择、in silico augmentation 与共享 RNA 编码器，学习可在 solid biopsy 与 liquid biopsy 之间迁移的通用转录组表征。</p>
+            <p class="overview-placeholder">此处可继续补充模型的训练样本规模、队列覆盖、外部验证策略与主要 benchmark 结果。当前文案用于展示中等篇幅的项目介绍在该文字区域中的排版容量。</p>
+            <p class="overview-placeholder">还可以在这里介绍模型的适用边界、研究用途、可解释性方法与临床使用声明；即使文字量继续增加，右侧模型总览图仍保持独立、完整的阅读空间。</p>
           </div>
-          <div class="p-arrow">→</div>
-          <div class="encoder"><div class="encoder-visual"></div><strong>Shared encoder</strong><span>4096 HVG representation</span></div>
-          <div class="p-arrow">→</div>
-          <div class="p-stack"><div class="p-node"><strong>Cancer detection</strong><span>Binary classification</span></div><div class="p-node"><strong>Origin</strong><span>36 tissue classes</span></div><div class="p-node"><strong>Localization</strong><span>5 tumor origins</span></div></div>
+          <div class="overview-points">
+            <div class="overview-point"><span>01</span><div><strong>统一表征</strong><p>将 4096 个高变基因的表达与基因 ID 编码为可迁移的 RNA representation。</p></div></div>
+            <div class="overview-point"><span>02</span><div><strong>跨样本任务</strong><p>同一编码器支持组织、cfRNA 与血小板输入，通过不同预测头完成下游任务。</p></div></div>
+            <div class="overview-point"><span>03</span><div><strong>可解释输出</strong><p>从样本级预测回到基因与通路贡献，让模型结果与生物学问题对齐。</p></div></div>
+          </div>
+          <div class="overview-actions"><a class="button primary" href="#workspace">开始快速演示</a><a class="button ghost" href="ranbag_lab.html">进入 RNABag Lab ↗</a></div>
         </div>
-        <div class="pipeline-foot"><span>FPKM normalized TSV</span><span>5 downstream tasks</span></div>
+        <figure class="overview-figure" role="button" tabindex="0" aria-label="放大 RNABag 模型总览图">
+          <img src="../asset/overview.png" alt="RNABag 数据准备、模型架构、下游任务、外部数据集、液体活检与可解释性总览">
+          <figcaption><span>从预训练表征到 solid / liquid biopsy 任务的整体路径</span><span>RNABag overview</span></figcaption>
+        </figure>
       </div>
     </section>
 
@@ -417,10 +407,15 @@
 
   </main>
 
+  <div class="overview-lightbox" id="overview-lightbox" role="dialog" aria-modal="true" aria-label="RNABag 模型总览放大图" aria-hidden="true">
+    <img src="../asset/overview.png" alt="RNABag 数据准备、模型架构、下游任务、外部数据集、液体活检与可解释性总览放大图">
+  </div>
+
   <footer><strong>RNABag Studio · Interface exploration</strong><span>Research-use prototype · Not for clinical diagnosis</span></footer>
 
   <script>
-    const isLab = new URLSearchParams(window.location.search).get("mode") === "lab";
+    const pageParams = new URLSearchParams(window.location.search);
+    const isLab = pageParams.get("mode") === "lab";
     if (isLab) document.body.classList.add("lab-mode");
 
     const sampleData = {
@@ -538,6 +533,33 @@
     ["dragleave", "drop"].forEach(name => dropzone.addEventListener(name, event => { event.preventDefault(); dropzone.classList.remove("drag"); }));
     dropzone.addEventListener("drop", event => event.dataTransfer.files[0] && validateFile(event.dataTransfer.files[0]));
     $("#run-demo").addEventListener("click", runDemo);
+    const overviewFigure = document.querySelector(".overview-figure");
+    const overviewLightbox = document.querySelector("#overview-lightbox");
+
+    function openOverviewLightbox() {
+      overviewLightbox.classList.add("is-open");
+      overviewLightbox.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overview-lightbox-open");
+    }
+
+    function closeOverviewLightbox() {
+      overviewLightbox.classList.remove("is-open");
+      overviewLightbox.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("overview-lightbox-open");
+      overviewFigure.focus({ preventScroll: true });
+    }
+
+    overviewFigure.addEventListener("click", openOverviewLightbox);
+    overviewFigure.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openOverviewLightbox();
+      }
+    });
+    overviewLightbox.addEventListener("click", closeOverviewLightbox);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && overviewLightbox.classList.contains("is-open")) closeOverviewLightbox();
+    });
     document.querySelectorAll('a[href="#workspace"]').forEach(link => link.addEventListener("click", event => {
       const workspace = document.querySelector(".workspace");
       if (!workspace || isLab) return;
