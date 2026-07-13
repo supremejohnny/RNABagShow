@@ -1,4 +1,8 @@
 # ---> Python
+# macOS metadata and original spreadsheet sources converted to TSV for tests
+.DS_Store
+sampledata/*.numbers
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -173,4 +177,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
