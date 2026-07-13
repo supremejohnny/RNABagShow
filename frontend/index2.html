@@ -23,7 +23,7 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; scroll-padding-top: 68px; }
     body {
       margin: 0;
       color: var(--ink);
@@ -38,7 +38,7 @@
     a { color: inherit; }
 
     .nav {
-      height: 68px;
+      height: 60px;
       padding: 0 clamp(20px, 5vw, 72px);
       display: flex;
       align-items: center;
@@ -69,6 +69,7 @@
       grid-template-columns: minmax(0, .9fr) minmax(460px, 1.1fr);
       align-items: center;
       gap: clamp(48px, 7vw, 100px);
+      min-height: 700px; /* 设置最小高度 */
     }
     .eyebrow { margin: 0 0 14px; color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
     h1 { margin: 0; max-width: 650px; font-size: clamp(44px, 6vw, 76px); line-height: .98; letter-spacing: -.065em; }
@@ -108,7 +109,7 @@
     .stepbar span { flex: 1; padding: 9px 12px; border-bottom: 2px solid #ccd4cc; }
     .stepbar span.active { color: var(--green); border-color: var(--green); }
 
-    .workspace { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 730px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .workspace { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 680px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
     .sidebar { padding: 24px; background: #f8fafd; border-right: 1px solid var(--line); }
     .side-label { margin: 0 0 14px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
     .input-list { display: grid; gap: 10px; }
@@ -162,7 +163,7 @@
     .schema-row:first-child { color: #fff; background: #224a3d; font-weight: 700; }
     .schema-row + .schema-row { border-top: 1px solid var(--line); }
     .schema-row:nth-child(3) { background: #f8faf7; }
-    .upload { margin-top: 20px; }
+    .upload { margin-top: 20px; position: relative; }
     .dropzone { display: block; padding: 22px; text-align: center; border: 1.5px dashed #aeb9c9; border-radius: 9px; background: #fbfcfe; cursor: pointer; transition: .18s; }
     .dropzone:hover, .dropzone.drag { background: var(--green-soft); border-color: var(--green); }
     .dropzone input { position: absolute; opacity: 0; pointer-events: none; }
@@ -174,9 +175,14 @@
     .validation.show { display: block; }
     .validation.ok { color: #145941; background: #e5f4ec; }
     .validation.warn { color: #7c4b16; background: #fff0d8; }
-    .sample-options { height: 104px; margin-top: 9px; overflow: hidden; border-top: 1px solid var(--line); }
-    .sample-options summary { padding: 10px 2px; color: var(--muted); cursor: pointer; font-size: 10px; font-weight: 700; }
-    .sample-options p { margin: 2px 2px 7px; color: var(--muted); font-size: 10px; }
+    .sample-options { height: 36px; margin-top: 9px; overflow: visible; border-top: 1px solid var(--line); position: relative; z-index: 5; }
+    .sample-options summary { height: 36px; display: flex; align-items: center; gap: 7px; padding: 10px 2px; color: var(--muted); cursor: pointer; font-size: 10px; font-weight: 700; list-style: none; }
+    .sample-options summary::-webkit-details-marker { display: none; }
+    .sample-options summary::before { content: "▶"; flex: none; color: #000; font-size: 9px; line-height: 1; }
+    .sample-options[open] > summary::before { content: "▲"; }
+    .sample-popover { display: none; position: absolute; left: 0; right: 0; bottom: calc(100% - 1px); padding: 11px; background: #fff; border: 1px solid var(--line); border-radius: 9px 9px 0 0; box-shadow: 0 -12px 28px rgba(35, 48, 73, .12); }
+    .sample-options[open] .sample-popover { display: block; }
+    .sample-options p { margin: 0 0 7px; color: var(--muted); font-size: 10px; line-height: 1.45; }
     .sample-link { display: flex; justify-content: space-between; gap: 10px; margin-top: 5px; padding: 9px 11px; color: var(--green-dark); text-decoration: none; border: 1px solid var(--line); border-radius: 7px; background: #f8fafd; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
     .sample-link:hover { background: #f3f6f2; color: var(--green); }
 
@@ -204,7 +210,8 @@
     .result-summary { padding: 13px 14px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; position: relative; z-index: 1; }
     .result-summary small { color: rgba(255,255,255,.5); }
     .result-summary strong { display: block; margin-top: 2px; color: var(--lime); font-size: 18px; }
-    .run { width: 100%; margin-top: 12px; color: #18212f; background: var(--lime); box-shadow: none; position: relative; z-index: 1; }
+    .run { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 9px; color: #18212f; background: var(--lime); box-shadow: none; position: relative; z-index: 1; }
+    .run::before { content: ""; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid #18212f; }
     .run:hover { background: #d7f88c; }
     .disclaimer { margin: 9px 4px 0; color: rgba(255,255,255,.4); text-align: center; font-size: 9px; position: relative; z-index: 1; }
 
@@ -213,16 +220,81 @@
     body.lab-mode { min-width: 980px; background: #f1f4f8; }
     body.lab-mode .nav, body.lab-mode .hero, body.lab-mode footer { display: none; }
     body.lab-mode .studio-wrap { min-height: 100vh; border: 0; }
-    body.lab-mode .studio { max-width: none; min-height: 100vh; padding: 24px 28px 28px; }
-    body.lab-mode .section-heading { margin-bottom: 18px; }
-    body.lab-mode .section-heading h2 { font-size: 34px; }
-    body.lab-mode .workspace { min-height: calc(100vh - 150px); }
-    body.lab-mode .main-panel { padding: 28px 34px; }
-    body.lab-mode .panel-grid { grid-template-columns: minmax(360px, .82fr) minmax(430px, 1.18fr); }
+    body.lab-mode .studio { max-width: none; min-height: 100vh; padding: 18px 28px 22px; }
+    body.lab-mode .section-heading { margin-bottom: 12px; }
+    body.lab-mode .section-heading h2 { font-size: 30px; }
+    body.lab-mode .stepbar { margin-bottom: 12px; }
+    body.lab-mode .workspace { min-height: min(650px, calc(100vh - 112px)); }
+    body.lab-mode .workspace { grid-template-columns: 280px minmax(0, 1fr); }
+    body.lab-mode .sidebar { padding-top: 34px; }
+    body.lab-mode .main-panel { padding: 22px 30px; }
+    body.lab-mode .panel-grid { grid-template-columns: minmax(300px, .82fr) minmax(330px, 1.18fr); }
 
+    @media (max-height: 820px) {
+      .studio { padding-top: 46px; padding-bottom: 56px; }
+      .section-heading { margin-bottom: 18px; }
+      .stepbar { margin-bottom: 12px; }
+      .workspace { min-height: 0; }
+      .sidebar { padding: 36px 20px 18px; }
+      .task-area { margin-top: 24px; }
+      .scope-note { margin-top: 22px; padding: 12px; }
+      .main-panel { padding: 18px 20px; }
+      .task-header { padding-bottom: 12px; }
+      .task-header .eyebrow { margin-bottom: 5px; }
+      .task-header h3 { margin: 3px 0 5px; font-size: clamp(22px, 2.5vw, 28px); }
+      .task-summary-grid { min-height: 0; margin-top: 8px; }
+      .summary-column { padding-top: 8px; }
+      .summary-label { margin-bottom: 4px; }
+      .task-summary-grid p { line-height: 1.35; }
+      .task-specs { gap: 1px; }
+      .task-specs li { line-height: 1.2; }
+      .panel-grid { gap: 16px; padding-top: 12px; }
+      .block-title { margin-bottom: 8px; }
+      .contract-lede { margin-bottom: 6px; line-height: 1.4; }
+      .contract-row { gap: 12px; padding: 4px 0; }
+      .contract-row dt, .contract-row dd { line-height: 1.35; }
+      .schema { margin-top: 8px; }
+      .schema-row span { padding-top: 5px; padding-bottom: 5px; }
+      .upload { margin-top: 8px; }
+      .dropzone { padding: 8px; }
+      .drop-icon { width: 28px; height: 28px; margin-bottom: 4px; line-height: 1; }
+      .dropzone strong, .dropzone span { line-height: 1.4; }
+      .sample-options { height: 36px; margin-top: 6px; }
+      .result-card { min-height: 0; padding: 16px; }
+      .chart { min-height: 150px; }
+      .empty-orbit { width: 90px; height: 90px; margin-bottom: 12px; }
+      body.lab-mode .studio { padding-top: 14px; padding-bottom: 18px; }
+      body.lab-mode .workspace { min-height: min(600px, calc(100vh - 100px)); }
+      body.lab-mode .main-panel { padding: 20px 28px; }
+    }
+
+    @media (max-height: 740px) {
+      .sidebar { padding-top: 32px; }
+      .main-panel { padding-top: 14px; padding-bottom: 14px; }
+      .task-header { padding-bottom: 9px; }
+      .task-header h3 { margin-bottom: 3px; }
+      .task-summary-grid { margin-top: 6px; }
+      .summary-column { padding-top: 6px; }
+      .panel-grid { padding-top: 8px; }
+      .contract-row { padding-top: 2px; padding-bottom: 2px; }
+      .schema-row span { padding-top: 3px; padding-bottom: 3px; }
+      .dropzone { padding-top: 6px; padding-bottom: 6px; }
+      .drop-icon { width: 24px; height: 24px; }
+      .sample-options, .sample-options summary { height: 30px; }
+      .sample-options summary { padding-top: 7px; padding-bottom: 7px; }
+      .sample-options { margin-top: 4px; }
+    }
+
+    @media (max-width: 1100px) {
+      .workspace { grid-template-columns: 220px minmax(0,1fr); }
+      .sidebar { padding-left: 18px; padding-right: 18px; }
+      .main-panel { padding-left: 20px; padding-right: 20px; }
+    }
     @media (max-width: 1050px) {
       .hero { grid-template-columns: 1fr; }
       .pipeline-card { max-width: 760px; }
+    }
+    @media (max-width: 900px) {
       .workspace { grid-template-columns: 250px minmax(0,1fr); }
       .panel-grid { grid-template-columns: 1fr; }
       .result-card { min-height: 430px; }
@@ -260,7 +332,7 @@
 <body>
   <nav class="nav">
     <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>RNABag Studio</a>
-    <div class="nav-right"><span class="status">Interactive prototype</span><a href="#studio">任务工作台</a><a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper ↗</a></div>
+    <div class="nav-right"><span class="status">Interactive prototype</span><a href="#workspace">任务工作台</a><a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper ↗</a></div>
   </nav>
 
   <main id="top">
@@ -269,7 +341,7 @@
         <p class="eyebrow">Transcriptome foundation model</p>
         <h1>三类输入，<br><em>一条清晰路径。</em></h1>
         <p class="lede">先告诉模型样本来自哪里，再选择该输入支持的任务。输入规则、格式示例与结果含义始终在同一视野内，减少试错。</p>
-        <div class="hero-actions"><a class="button primary" href="#studio">开始快速演示</a><a class="button ghost" href="ranbag_lab.html">进入 RNABag Lab ↗</a></div>
+        <div class="hero-actions"><a class="button primary" href="#workspace">开始快速演示</a><a class="button ghost" href="ranbag_lab.html">进入 RNABag Lab ↗</a></div>
       </div>
       <div class="pipeline-card" aria-label="RNABag 输入到任务的流程图">
         <div class="pipeline-head"><span>Input → encoder → task</span><span>RNABag / 01</span></div>
@@ -292,7 +364,7 @@
       <section class="studio">
         <div class="section-heading"><div><p class="eyebrow">Rapid task showcase</p><h2>三类输入的代表任务</h2></div><p>快速演示版为每类 input 保留一个代表性预测任务。完整的组织来源识别与肿瘤定位分析请进入 RNABag Lab。</p></div>
         <div class="stepbar" aria-hidden="true"><span class="active">01 · Input</span><span class="active">02 · Task</span><span>03 · Validate</span><span>04 · Result</span></div>
-        <div class="workspace">
+        <div class="workspace" id="workspace">
           <aside class="sidebar">
             <p class="side-label">1. Choose input</p>
             <div class="input-list" id="input-list"></div>
@@ -326,7 +398,7 @@
                   <h4 class="block-title"><span class="number">4</span>校验文件</h4>
                   <label class="dropzone" id="dropzone"><input id="file-input" type="file" accept=".tsv,text/tab-separated-values,text/plain"><span class="drop-icon">↑</span><strong>拖入或选择 FPKM .tsv</strong><span>文件只在当前浏览器中读取，用于格式检查</span></label>
                   <div class="validation" id="validation"></div>
-                  <details class="sample-options"><summary>扩展选项 · Example dataset</summary><p>下载与当前样本模态一致的 100-sample FPKM matrix，用于检查数据结构与快速演示。</p><a class="sample-link" id="sample-link" download><span id="sample-filename">rnabag_demo_fpkm_tissue_100.tsv</span><strong>Download ↓</strong></a></details>
+                  <details class="sample-options"><summary>扩展选项 · Example dataset</summary><div class="sample-popover"><p id="sample-description">下载与当前任务样本模态一致的 100-sample FPKM matrix，用于检查数据结构与快速演示。</p><a class="sample-link" id="sample-link" download><span id="sample-filename">rnabag_demo_fpkm_tissue_100.tsv</span><strong>Download ↓</strong></a></div></details>
                 </div>
               </div>
 
@@ -334,7 +406,7 @@
                 <div class="result-head"><div><small>Graphical output</small><strong id="result-title">Prediction preview</strong></div><span class="demo-badge">PRESET DEMO</span></div>
                 <div class="chart" id="chart"><div class="empty-chart"><div class="empty-orbit"></div><p>选择“运行结果演示”，查看当前任务最适合的图形化表达。</p></div></div>
                 <div class="result-summary" id="result-summary"><small>Expected output</small><strong id="expected-output">Healthy / Cancer</strong></div>
-                <button class="button run" id="run-demo" type="button">运行结果演示 →</button>
+                <button class="button run" id="run-demo" type="button">运行结果演示</button>
                 <p class="disclaimer">演示使用预置数据，不代表浏览器已运行真实模型。</p>
               </div>
             </div>
@@ -351,23 +423,29 @@
     const isLab = new URLSearchParams(window.location.search).get("mode") === "lab";
     if (isLab) document.body.classList.add("lab-mode");
 
+    const sampleData = {
+      tissue: { path: "samples/rnabag_demo_fpkm_tissue_100.tsv", label: "tissue RNA" },
+      plasma: { path: "samples/rnabag_demo_fpkm_plasma_100.tsv", label: "plasma RNA" },
+      platenet: { path: "samples/rnabag_demo_fpkm_platelet_100.tsv", label: "platelet RNA" }
+    };
+
     const inputs = {
       tissue: {
-        label: "tissue", subtitle: "组织 RNA", icon: "TI", sample: "samples/rnabag_demo_fpkm_tissue_100.tsv",
+        label: "tissue", subtitle: "组织 RNA", icon: "TI",
         tasks: {
-          cancer: { title: "Tissue Cancer Detection", description: "评估组织来源的 bulk RNA expression profile 是否呈现癌症相关转录信号，适用于研究队列中的癌症状态分层。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: binary classification", "Labels: Healthy / Cancer", "Representation: 4096 HVGs", "Output: class probability"], expected: "Healthy / Cancer", type: "binary", result: [["Cancer", 91], ["Healthy", 9]] },
-          origin: { title: "Tissue Origin Identification", description: "根据全转录组表达特征推断样本最可能的组织来源，用于跨组织来源追踪、样本注释与 provenance confirmation。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: 36-class classification", "Labels: tissue-origin ontology", "Representation: 4096 HVGs", "Output: ranked probabilities"], expected: "36 tissue classes", type: "rank", result: [["Pancreas", 67], ["Stomach", 18], ["Lung", 9], ["Other", 6]] }
+          cancer: { title: "Tissue Cancer Detection", sampleKey: "tissue", description: "评估组织来源的 bulk RNA expression profile 是否呈现癌症相关转录信号，适用于研究队列中的癌症状态分层。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: binary classification", "Labels: Healthy / Cancer", "Representation: 4096 HVGs", "Output: class probability"], expected: "Healthy / Cancer", type: "binary", result: [["Cancer", 91], ["Healthy", 9]] },
+          origin: { title: "Tissue Origin Identification", sampleKey: "tissue", description: "根据全转录组表达特征推断样本最可能的组织来源，用于跨组织来源追踪、样本注释与 provenance confirmation。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: 36-class classification", "Labels: tissue-origin ontology", "Representation: 4096 HVGs", "Output: ranked probabilities"], expected: "36 tissue classes", type: "rank", result: [["Pancreas", 67], ["Stomach", 18], ["Lung", 9], ["Other", 6]] }
         }
       },
       plasma: {
-        label: "plasma", subtitle: "血浆 RNA", icon: "PL", sample: "samples/rnabag_demo_fpkm_plasma_100.tsv",
-        tasks: { cancer: { title: "Plasma Cancer Detection", description: "识别 plasma-derived RNA expression matrix 中的癌症相关信号，为 minimally invasive liquid-biopsy 研究提供分层依据。", specs: ["Input: plasma-derived RNA", "Head: binary classification", "Labels: Healthy / Cancer", "Assay: liquid-biopsy transcriptome", "Output: class probability"], expected: "Healthy / Cancer", type: "binary", result: [["Healthy", 78], ["Cancer", 22]] } }
+        label: "plasma", subtitle: "血浆 RNA", icon: "PL",
+        tasks: { cancer: { title: "Plasma Cancer Detection", sampleKey: "plasma", description: "识别 plasma-derived RNA expression matrix 中的癌症相关信号，为 minimally invasive liquid-biopsy 研究提供分层依据。", specs: ["Input: plasma-derived RNA", "Head: binary classification", "Labels: Healthy / Cancer", "Assay: liquid-biopsy transcriptome", "Output: class probability"], expected: "Healthy / Cancer", type: "binary", result: [["Healthy", 78], ["Cancer", 22]] } }
       },
       platenet: {
-        label: "platenet", subtitle: "血小板 RNA", icon: "PT", sample: "samples/rnabag_demo_fpkm_platelet_100.tsv",
+        label: "platenet", subtitle: "血小板 RNA", icon: "PT",
         tasks: {
-          cancer: { title: "Platenet Cancer Detection", description: "利用 tumor-educated platelet 的转录组重编程信号评估癌症状态，捕捉循环系统中的肿瘤相关分子响应。", specs: ["Input: platelet-derived RNA", "Head: thresholded binary classifier", "Labels: Healthy / Cancer", "Biology: tumor-educated platelets", "Output: class probability"], expected: "Healthy / Cancer", type: "binary", result: [["Cancer", 83], ["Healthy", 17]] },
-          location: { title: "Tumor Localization", description: "基于血小板转录组特征定位最可能的肿瘤来源，为后续组织学验证提供候选器官或癌种假设。", specs: ["Input: platelet-derived RNA", "Head: 5-class classification", "Labels: HNSC / NSCLC / Glioma / PAAD / OV", "Biology: tumor-educated platelets", "Output: ranked probabilities"], expected: "HNSC / NSCLC / Glioma / PAAD / OV", type: "rank", result: [["NSCLC", 58], ["PAAD", 21], ["OV", 11], ["HNSC", 7], ["Glioma", 3]] }
+          cancer: { title: "Platenet Cancer Detection", sampleKey: "platenet", description: "利用 tumor-educated platelet 的转录组重编程信号评估癌症状态，捕捉循环系统中的肿瘤相关分子响应。", specs: ["Input: platelet-derived RNA", "Head: thresholded binary classifier", "Labels: Healthy / Cancer", "Biology: tumor-educated platelets", "Output: class probability"], expected: "Healthy / Cancer", type: "binary", result: [["Cancer", 83], ["Healthy", 17]] },
+          location: { title: "Tumor Localization", sampleKey: "platenet", description: "基于血小板转录组特征定位最可能的肿瘤来源，为后续组织学验证提供候选器官或癌种假设。", specs: ["Input: platelet-derived RNA", "Head: 5-class classification", "Labels: HNSC / NSCLC / Glioma / PAAD / OV", "Biology: tumor-educated platelets", "Output: ranked probabilities"], expected: "HNSC / NSCLC / Glioma / PAAD / OV", type: "rank", result: [["NSCLC", 58], ["PAAD", 21], ["OV", 11], ["HNSC", 7], ["Glioma", 3]] }
         }
       }
     };
@@ -408,10 +486,12 @@
       $("#api-key").textContent = `input: ${activeInput}`;
       $("#modality-rule").textContent = `样本模态：${activeInput} only`;
       $("#modality-help").textContent = `一个文件中请勿混入其他模态；该任务只接受 ${input.subtitle}。`;
-      $("#expected-output").textContent = task.expected;
-      $("#sample-link").href = input.sample;
-      $("#sample-link").download = input.sample.split("/").pop();
-      $("#sample-filename").textContent = input.sample.split("/").pop();
+      const sample = sampleData[task.sampleKey];
+      const sampleFilename = sample.path.split("/").pop();
+      $("#sample-description").textContent = `${task.title} 使用 ${sample.label} 的 100-sample FPKM matrix，可用于检查数据结构与快速演示。`;
+      $("#sample-link").href = sample.path;
+      $("#sample-link").download = sampleFilename;
+      $("#sample-filename").textContent = sampleFilename;
       $("#validation").className = "validation";
       $("#file-input").value = "";
       resetChart();
@@ -458,6 +538,15 @@
     ["dragleave", "drop"].forEach(name => dropzone.addEventListener(name, event => { event.preventDefault(); dropzone.classList.remove("drag"); }));
     dropzone.addEventListener("drop", event => event.dataTransfer.files[0] && validateFile(event.dataTransfer.files[0]));
     $("#run-demo").addEventListener("click", runDemo);
+    document.querySelectorAll('a[href="#workspace"]').forEach(link => link.addEventListener("click", event => {
+      const workspace = document.querySelector(".workspace");
+      if (!workspace || isLab) return;
+      event.preventDefault();
+      history.pushState(null, "", "#workspace");
+      const navHeight = document.querySelector(".nav")?.offsetHeight || 0;
+      const targetTop = window.scrollY + workspace.getBoundingClientRect().top - navHeight - 8;
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
+    }));
 
     renderInputList(); renderTasks(); renderPanel();
   </script>
