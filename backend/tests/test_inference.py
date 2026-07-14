@@ -89,6 +89,7 @@ class InputInspectionTests(unittest.TestCase):
             task="platelet_cancer_detection",
         )
 
+        self.assertEqual(result["schema_version"], 1)
         self.assertEqual(result["mode"], "checkpoint")
         self.assertIn("Platelet_cancer_detect", result["model_version"])
         self.assertEqual(len(result["predictions"]), 3)

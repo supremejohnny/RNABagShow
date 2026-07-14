@@ -18,7 +18,7 @@ FastAPI on port 8000 in the same terminal; `Ctrl+C` stops both. The first
 request for each task also loads and caches that task's checkpoint, so it is
 slower than later requests.
 
-## Request flow and local concurrency
+## Request flow and concurrency
 
 Uploads stream to a temporary file rather than being buffered entirely in the
 web process. One worker processes analyses in order and caches one model per
@@ -26,10 +26,19 @@ used task. This prevents 5-10 simultaneous visitors from launching overlapping
 GPU jobs or loading duplicate checkpoint copies. Up to ten waiting analyses are
 accepted by default; excess requests receive HTTP 429.
 
-Raw uploads are deleted as soon as validation/inference finishes (including
-failures and cancellation). Job metadata and results live only in memory and
-expire after one hour by default. There is no login or persistent result store
-in this local showcase phase.
+The service has two explicit modes:
+
+- Default memory mode keeps job metadata/results in memory for one hour and
+  deletes each raw upload after inference.
+- `RNABAG_PERSISTENCE_ENABLED=true` stores analysis metadata/results in
+  PostgreSQL and original bytes in a private S3-compatible bucket. The worker
+  downloads a temporary processing copy and deletes that copy after success,
+  failure, cancellation, or shutdown.
+
+Persistent startup applies ordered migrations, verifies the private bucket,
+and returns interrupted `validating`/`running` rows to `queued`. The API never
+returns the storage bucket or key. There is still no login, so this test-stage
+service must remain bound to trusted/local interfaces.
 
 The upload endpoint accepts the TSV as the raw HTTP request body:
 
@@ -50,6 +59,13 @@ Poll `/api/v1/analyses/{analysis_id}` until it succeeds, then read
 - `RNABAG_QUEUE_CAPACITY`: waiting analyses; default 10.
 - `RNABAG_RESULT_TTL_SECONDS`: in-memory result lifetime; default 3600 seconds.
 - `RNABAG_TEMP_DIR`: optional temporary upload directory.
+- `RNABAG_PERSISTENCE_ENABLED`: enable PostgreSQL + S3 persistence when `true`.
+- `RNABAG_DATABASE_URL`: PostgreSQL connection URL.
+- `RNABAG_S3_ENDPOINT_URL`: S3-compatible endpoint, such as local MinIO.
+- `RNABAG_S3_ACCESS_KEY` / `RNABAG_S3_SECRET_KEY`: application credentials;
+  do not use the MinIO root credentials.
+- `RNABAG_S3_BUCKET`: private raw-input bucket.
+- `RNABAG_S3_REGION`: S3 region; default `us-east-1`.
 - `RNABAG_DEVICE`: `auto` (CUDA when available, otherwise CPU), `cpu`, `cuda`,
   `cuda:N`, or `mps`.
 - `RNABAG_BATCH_SIZE`: inference batch size; default 8 on CUDA and 1 elsewhere.
@@ -78,3 +94,20 @@ revisited with the team's future golden dataset. See `RNABag/data/README.md`.
 
 Plasma remains disabled even though a copied checkpoint exists; its public
 workflow will be enabled only after its input/sample contract is reviewed.
+
+## Persistent data contract
+
+`backend/migrations/001_create_analyses.sql` creates the first-stage
+`analyses` table. `result` and `input_summary` are JSONB objects; original TSV
+bytes are never stored in PostgreSQL. Every result includes
+`schema_version: 1`.
+
+Object keys use `uploads/{first-content-analysis-id}/input.tsv`. The service
+hashes raw bytes with SHA-256 while streaming. Repeated identical uploads get
+independent analysis rows but reuse the first active object under a
+transaction-scoped advisory lock. Filenames are display metadata only.
+
+`DELETE /api/v1/analyses/{id}` marks the row `purged`, removes result/error
+payloads, and deletes the physical object only when no unpurged analysis still
+references it. A full test-environment reset is documented in
+`deploy/README.md`.

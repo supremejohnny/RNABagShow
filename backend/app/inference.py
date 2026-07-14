@@ -564,6 +564,7 @@ def run_checkpoint_inference(
         )
 
     return {
+        "schema_version": 1,
         "mode": "checkpoint",
         "task": task,
         "modality": definition["modality"],

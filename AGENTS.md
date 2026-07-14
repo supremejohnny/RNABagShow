@@ -50,7 +50,14 @@ secrets, or environment files in the repository checkout.
 - `frontend/index.html`: canonical, self-contained showcase frontend.
 - `frontend/ranbag_lab.html`: iframe entry for the expanded task workspace.
 - `backend/app/main.py`: FastAPI app, raw upload streaming, in-memory jobs,
-  single-worker queue, temporary-file cleanup, and static-file serving.
+  persistent/in-memory job routing, single-worker queue, temporary-file
+  cleanup, and static-file serving.
+- `backend/app/persistence.py`: PostgreSQL migrations and analysis state,
+  private S3-compatible object operations, SHA-256 object reuse, recovery, and
+  purge/reference handling.
+- `backend/migrations/`: ordered PostgreSQL schema migrations.
+- `deploy/`: persistence Compose stack, external-config bootstrap, and guarded
+  test-data reset commands.
 - `backend/app/inference.py`: TSV validation, GeneID mapping, ordered 4096-HVG
   matrix construction, checkpoint loading, and prediction formatting.
 - `backend/app/catalog.py`: API task names, modalities, and label order.
@@ -124,6 +131,9 @@ Before handing off backend/preprocessing changes, run:
 python3 -m py_compile backend/app/main.py backend/app/inference.py
 python3 -m unittest discover -s backend/tests -v
 sed -n '/<script>/,/<\/script>/p' frontend/index.html | sed '1d;$d' | node --check
+bash -n deploy/*.sh
+docker compose --env-file deploy/persistence.env.example \
+  -f deploy/compose.persistence.yml config --quiet
 ```
 
 Keep unrelated user changes in a dirty worktree. Do not normalize or rewrite
@@ -132,8 +142,11 @@ warnings.
 
 ## Data and privacy
 
-The showcase has no login and does not retain uploaded input. Uploads must stay
-in a temporary directory and be deleted after success, failure, cancellation,
-or shutdown. Do not store PHI in `info.txt`, logs, tests, `harness/`, or Git.
-External server notes may exist outside this repository; never copy credentials
-or secrets into project documentation.
+The showcase still has no login. In memory-only mode, uploads stay temporary
+and are deleted after success, failure, cancellation, or shutdown. In approved
+persistent mode, original bytes are retained only in the private object bucket
+and analysis metadata/result JSON only in PostgreSQL; processing copies remain
+temporary and must be deleted on every terminal path. Do not store PHI in
+logs, tests, `harness/`, Git, or deployment documentation. Credentials live
+only in the external mode-0600 config file; never copy them into repository
+files.
