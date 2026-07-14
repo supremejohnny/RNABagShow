@@ -1,7 +1,14 @@
-# RNABag persistence test deployment
+# RNABag server deployment
 
-This stack runs PostgreSQL and private MinIO on loopback-only ports. Mutable
-data and secrets stay outside the Git checkout under the deployment root.
+The server deployment has two Compose projects:
+
+- `compose.persistence.yml`: PostgreSQL and private MinIO.
+- `compose.app-cpu.yml`: one managed FastAPI/Uvicorn process for the frontend,
+  API, queue, and CPU inference.
+
+Every service listens on server loopback only. Mutable data and secrets stay
+outside the Git checkout under the deployment root. The application mounts the
+checkout read-only, so deployment commands cannot modify repository files.
 
 Server layout:
 
@@ -38,6 +45,9 @@ Run from the server deployment checkout:
 ```bash
 ./deploy/bootstrap-persistence-config.sh
 ./deploy/persistence-up.sh
+./deploy/test-persistence.sh
+./deploy/app-up.sh
+./deploy/app-smoke-test.sh
 ```
 
 The bootstrap command creates random PostgreSQL, MinIO root, and separate
@@ -47,15 +57,47 @@ services, creates the private bucket and least-privilege MinIO user, then runs
 the ordered PostgreSQL migrations in a one-shot container. No host Python
 packages or files inside the Git checkout are created.
 
-Run the real PostgreSQL/MinIO round-trip and SHA-256 deduplication tests with:
+The first application build downloads the CPU PyTorch wheel and can take a few
+minutes. Later starts reuse the image and are much faster. FastAPI serves both
+the canonical frontend and `/api/v1` on port 8000, so a second development
+frontend process is not used on the server.
+
+Run the real PostgreSQL/MinIO round-trip and SHA-256 deduplication tests
+independently with:
 
 ```bash
 ./deploy/test-persistence.sh
 ```
 
-For the real backend process, load the same config before starting Uvicorn.
-Keep the HTTP service on a trusted/loopback interface until authentication,
-TLS, rate limiting, and the public deployment review are complete.
+Inspect or stop the application with:
+
+```bash
+./deploy/app-status.sh
+./deploy/app-down.sh
+```
+
+`app-down.sh` stops only FastAPI. PostgreSQL and MinIO continue running. Use
+`persistence-down.sh` when those services should also stop.
+
+## Viewing the server page
+
+Keep the HTTP service on loopback until authentication, TLS, rate limiting, and
+the public deployment review are complete. From the development computer,
+open a tunnel in a terminal:
+
+```bash
+ssh -N -L 18000:127.0.0.1:8000 johnny@172.16.17.4
+```
+
+Keep that terminal open, then visit `http://127.0.0.1:18000/`. The browser is
+showing the frontend served by the server FastAPI process, and uploads go back
+through the same tunnel to the server API. Port 18000 is only the local end of
+the tunnel; use another unused local port if necessary.
+
+This is an internal staging deployment. A later public deployment would put a
+TLS reverse proxy on port 443 in front of the same loopback-only FastAPI
+service. The current application has no login, so it must not be opened to the
+public internet yet.
 
 ## Inspecting test data
 

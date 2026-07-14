@@ -1,0 +1,19 @@
+FROM python:3.10-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+COPY backend/requirements.txt backend/requirements-persistence.txt /tmp/requirements/
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install \
+        --index-url https://download.pytorch.org/whl/cpu \
+        "torch==2.2.2" \
+    && python -m pip install -r /tmp/requirements/requirements.txt \
+    && python -c "import boto3, fastapi, numpy, pandas, psycopg, torch, uvicorn"
+
+CMD ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "127.0.0.1", "--port", "8000", "--workers", "1"]

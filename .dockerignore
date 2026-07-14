@@ -1,0 +1,9 @@
+**
+
+!backend/
+!backend/**
+!sampledata/
+!sampledata/**
+!deploy/
+!deploy/Dockerfile.persistence
+!deploy/Dockerfile.app-cpu

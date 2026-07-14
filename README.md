@@ -30,4 +30,9 @@ frontend/index.html
 
 打开 `http://127.0.0.1:5173/`。`run.sh` 会在同一终端中启动前端（5173）和后端（8000）；按 `Ctrl+C` 同时停止两者。详细 API、并发、临时数据删除和环境变量见 `backend/README.md`。
 
+`run.sh` 只用于本地开发。服务器采用 Docker Compose：FastAPI 在同一个
+8000 端口提供网页和 API，PostgreSQL 与私有 MinIO 保存已批准的测试数据，
+所有端口默认仅绑定服务器回环地址。完整启动、SSH 隧道访问和测试命令见
+[`deploy/README.md`](deploy/README.md)。
+
 持久化测试栈的启动、迁移、查看和彻底删除方式见 `deploy/README.md`。

@@ -56,8 +56,8 @@ secrets, or environment files in the repository checkout.
   private S3-compatible object operations, SHA-256 object reuse, recovery, and
   purge/reference handling.
 - `backend/migrations/`: ordered PostgreSQL schema migrations.
-- `deploy/`: persistence Compose stack, external-config bootstrap, and guarded
-  test-data reset commands.
+- `deploy/`: persistence and CPU application Compose stacks, external-config
+  bootstrap, server smoke checks, and guarded test-data reset commands.
 - `backend/app/inference.py`: TSV validation, GeneID mapping, ordered 4096-HVG
   matrix construction, checkpoint loading, and prediction formatting.
 - `backend/app/catalog.py`: API task names, modalities, and label order.
@@ -125,6 +125,10 @@ and FastAPI on port 8000; one `Ctrl+C` stops both child processes. The frontend
 also supports other local Live Server and `file://` origins by routing the API
 to port 8000; CORS is restricted to local origins.
 
+`run.sh` is development-only. On the server, use the Compose commands described
+in `deploy/README.md`; FastAPI serves both the frontend and API from one
+loopback-only port, and the deployment checkout is mounted read-only.
+
 Before handing off backend/preprocessing changes, run:
 
 ```bash
@@ -134,6 +138,9 @@ sed -n '/<script>/,/<\/script>/p' frontend/index.html | sed '1d;$d' | node --che
 bash -n deploy/*.sh
 docker compose --env-file deploy/persistence.env.example \
   -f deploy/compose.persistence.yml config --quiet
+RNABAG_UID="$(id -u)" RNABAG_GID="$(id -g)" \
+  docker compose --env-file deploy/persistence.env.example \
+  -f deploy/compose.app-cpu.yml config --quiet
 ```
 
 Keep unrelated user changes in a dirty worktree. Do not normalize or rewrite
