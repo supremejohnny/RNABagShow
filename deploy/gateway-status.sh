@@ -28,5 +28,5 @@ docker compose \
   logs --tail 40 gateway
 
 curl --fail --silent --show-error \
-  "http://$RNABAG_GATEWAY_BIND_IP:$RNABAG_GATEWAY_PORT/api/v1/health/ready"
+  "http://127.0.0.1:$RNABAG_GATEWAY_PORT/api/v1/health/ready"
 echo

@@ -45,7 +45,7 @@ docker compose \
   ps
 
 curl --fail --silent --show-error \
-  "http://$RNABAG_GATEWAY_BIND_IP:$RNABAG_GATEWAY_PORT/api/v1/health/ready" \
+  "http://127.0.0.1:$RNABAG_GATEWAY_PORT/api/v1/health/ready" \
   >/dev/null
 
 echo "RNABag intranet gateway is ready:"

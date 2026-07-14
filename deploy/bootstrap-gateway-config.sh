@@ -60,7 +60,9 @@ umask 077
 {
   printf 'server {\n'
   printf '    listen %s:%s;\n' "$BIND_IP" "$PORT"
+  printf '    listen 127.0.0.1:%s;\n' "$PORT"
   printf '    server_name _;\n\n'
+  printf '    allow 127.0.0.1;\n'
   printf '    allow %s;\n' "$ALLOWED_CIDR"
   printf '    deny all;\n\n'
   printf '    client_max_body_size 2g;\n'
