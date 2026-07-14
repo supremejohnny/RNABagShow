@@ -8,15 +8,42 @@ state.
 
 ## Product stage
 
-RNABagShow is currently a local, research-use paper showcase for biology,
+RNABagShow is currently a research-use paper showcase for biology,
 computational-biology, and medical-domain experts. It is no longer a static
 mock: the frontend uploads an expression TSV to FastAPI and the backend runs
-the copied RNABag PyTorch checkpoints. Public-server deployment, TLS, reverse
-proxy, domain routing, authentication, and SSO are deliberately out of the
-current implementation scope.
+the copied RNABag PyTorch checkpoints. The first PostgreSQL plus private
+S3-compatible object-storage persistence phase is approved and follows the
+design in `harness/database/analysis-storage-schema.md` when that local file is
+available. Public exposure, TLS, reverse proxy, domain routing,
+authentication, and SSO remain separate deployment decisions.
 
-Never describe model output as a clinical diagnosis. Do not add persistence,
-analytics, or logging of uploaded expression data without explicit approval.
+Never describe model output as a clinical diagnosis. Persistence is limited to
+the approved analysis metadata/result and private raw-upload object described
+by the persistence design. Do not add analytics or log uploaded expression
+data. Do not broaden retention, access, or secondary-use behavior without
+explicit approval.
+
+## Server deployment checkout
+
+The server checkout at
+`/home/johnny/services/rnabag/RNABagShow` is deployment-only. Never edit,
+generate, format, patch, commit, or otherwise modify repository files in that
+checkout. Source changes must be made and committed in the development
+workspace, then delivered to the server only with `git fetch` / `git pull`.
+After updating the checkout, only read-only inspection and explicit deployment
+commands may run there.
+
+All mutable server state lives outside the Git checkout under its sibling
+directories:
+
+- `/home/johnny/services/rnabag/postgres/`
+- `/home/johnny/services/rnabag/object-storage/`
+- `/home/johnny/services/rnabag/runtime/`
+- `/home/johnny/services/rnabag/config/` (mode `0700`, owned by `johnny`)
+- `/home/johnny/services/rnabag/backups/`
+
+Do not place database files, object data, runtime uploads, logs, generated
+secrets, or environment files in the repository checkout.
 
 ## Canonical components
 
