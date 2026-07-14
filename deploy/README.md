@@ -42,22 +42,15 @@ Run from the server deployment checkout:
 
 The bootstrap command creates random PostgreSQL, MinIO root, and separate
 least-privilege application credentials in the external config file. It
-refuses to overwrite an existing file.
+refuses to overwrite an existing file. `persistence-up.sh` starts the two
+services, creates the private bucket and least-privilege MinIO user, then runs
+the ordered PostgreSQL migrations in a one-shot container. No host Python
+packages or files inside the Git checkout are created.
 
-Create a runtime-only migration environment outside Git, then initialize the
-schema and private bucket:
+Run the real PostgreSQL/MinIO round-trip and SHA-256 deduplication tests with:
 
 ```bash
-DEPLOY_ROOT=/home/johnny/services/rnabag
-python3 -m venv "$DEPLOY_ROOT/runtime/persistence-venv"
-"$DEPLOY_ROOT/runtime/persistence-venv/bin/pip" install \
-  -r "$DEPLOY_ROOT/RNABagShow/backend/requirements-persistence.txt"
-
-set -a
-source "$DEPLOY_ROOT/config/persistence.env"
-set +a
-cd "$DEPLOY_ROOT/RNABagShow"
-"$DEPLOY_ROOT/runtime/persistence-venv/bin/python" -m backend.app.migrate
+./deploy/test-persistence.sh
 ```
 
 For the real backend process, load the same config before starting Uvicorn.
@@ -102,7 +95,7 @@ RNABAG_CONFIRM_RESET=delete-rnabag-test-database-and-objects \
 The reset stops PostgreSQL/MinIO and removes only the configured sibling
 `postgres/` and `object-storage/` contents. It preserves
 `config/persistence.env`. Recreate the empty services with
-`./deploy/persistence-up.sh`, then rerun `python -m backend.app.migrate`.
+`./deploy/persistence-up.sh`; that command automatically reruns migrations.
 
 If deleting through the IDE instead, first stop the backend and run
 `./deploy/persistence-down.sh`. Delete the contents of both data directories

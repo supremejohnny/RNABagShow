@@ -60,3 +60,22 @@ services:
       RNABAG_S3_ACCESS_KEY: ${RNABAG_S3_ACCESS_KEY:?RNABAG_S3_ACCESS_KEY is required}
       RNABAG_S3_SECRET_KEY: ${RNABAG_S3_SECRET_KEY:?RNABAG_S3_SECRET_KEY is required}
       RNABAG_S3_BUCKET: ${RNABAG_S3_BUCKET:?RNABAG_S3_BUCKET is required}
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.persistence
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      RNABAG_DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      RNABAG_S3_ENDPOINT_URL: http://minio:9000
+      RNABAG_S3_ACCESS_KEY: ${RNABAG_S3_ACCESS_KEY:?RNABAG_S3_ACCESS_KEY is required}
+      RNABAG_S3_SECRET_KEY: ${RNABAG_S3_SECRET_KEY:?RNABAG_S3_SECRET_KEY is required}
+      RNABAG_S3_BUCKET: ${RNABAG_S3_BUCKET:?RNABAG_S3_BUCKET is required}
+      RNABAG_S3_REGION: ${RNABAG_S3_REGION:-us-east-1}

@@ -19,7 +19,17 @@ fi
 docker compose \
   --env-file "$CONFIG_FILE" \
   -f "$SCRIPT_DIR/compose.persistence.yml" \
-  up -d
+  up -d --wait postgres minio
+
+docker compose \
+  --env-file "$CONFIG_FILE" \
+  -f "$SCRIPT_DIR/compose.persistence.yml" \
+  run --rm minio-init
+
+docker compose \
+  --env-file "$CONFIG_FILE" \
+  -f "$SCRIPT_DIR/compose.persistence.yml" \
+  run --rm --build migrate
 
 docker compose \
   --env-file "$CONFIG_FILE" \
