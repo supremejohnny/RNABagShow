@@ -3,6 +3,9 @@
 .DS_Store
 sampledata/*.numbers
 
+# Local agent continuity notes and machine-specific run state
+/harness/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -31,9 +31,11 @@ brief_code/
 
 ## Setup
 
-1. Install the required dependencies:
+1. The included `requirements.txt` is a legacy Conda environment export. Create
+   and activate it with:
 ```bash
-pip install -r requirements.txt
+conda env create -f requirements.txt
+conda activate RNABag
 ```
 
 2. Ensure your model checkpoints are placed in the `checkpoints/` directory:
@@ -49,18 +51,36 @@ You can run inference using the `main.py` entry point or by calling the `inferen
 
 ### 1. Cancer Detection Mode
 ```bash
-python main.py --task tissue_cancer_detect --tag clinic_pancreas --device cuda
+python main.py --task tissue_cancer_detect --device cuda
 ```
 
 ### 2. Tissue Origin Mode
 ```bash
-python main.py --task tissue_origin --tag clinic_gastric --device cuda
+python main.py --task tissue_origin --device cuda
 ```
 
 ### Arguments:
 - `--task`: Choose between `tissue_cancer_detect` and `tissue_origin`.
-- `--tag`: Data tag for loading input files (expects `log1p_tissue.npy`).
 - `--device`: Device to run on (default: `cuda` if available, else `cpu`).
+
+Set `indir` in `config/config.py` to the directory containing
+`log1p_data.npy`. The file must contain samples as rows and exactly 4096 HVG
+columns in the order defined by `../data/tcga_hvg_gene_4096.txt`.
+
+Duplicate GeneID/Symbol rows use the **first occurrence wins** rule documented
+in `../data/README.md`: input order is preserved and later duplicates are
+discarded without summing or averaging.
+
+Gene names use the current annotation Symbol first. A historical HVG synonym
+is accepted only when it is the row's sole HVG synonym and no other GeneID owns
+that name. Unresolved or ambiguous HVGs are filled with zero. This recommended
+showcase rule must be reviewed together with the future golden dataset.
+
+`raw_sum` and `input_sum` intentionally contain the same sum of each final
+4096-gene `log1p_data.npy` row. The two copies occupy separate summary-token
+positions expected by the trained model and are retained for batch-effect
+mitigation. Despite the historical name `raw_sum`, it is not computed from the
+raw FPKM matrix in the current inference contract.
 
 ## Key Features
 - **Stripped Inference Logic**: All masking and unused training utilities have been removed.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import hashlib
+import logging
 import os
 import shutil
 import tempfile
@@ -14,11 +15,17 @@ from typing import Any
 from urllib.parse import unquote
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .catalog import TASKS, public_task_catalog
-from .inference import InputValidationError, run_mock_inference
+from .inference import (
+    InferenceRuntimeError,
+    InputValidationError,
+    runtime_asset_summary,
+    run_checkpoint_inference,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +37,7 @@ ALLOWED_CONTENT_TYPES = {
     "text/plain",
     "text/tab-separated-values",
 }
+LOGGER = logging.getLogger(__name__)
 
 
 def utc_now() -> datetime:
@@ -74,10 +82,9 @@ async def worker_loop(app: FastAPI) -> None:
         try:
             job.update(status="validating", updated_at=iso_now())
             result = await asyncio.to_thread(
-                run_mock_inference,
+                run_checkpoint_inference,
                 Path(job["path"]),
                 filename=job["filename"],
-                file_digest=job["file_digest"],
                 task=job["task"],
             )
             if job["status"] != "cancelled":
@@ -98,7 +105,17 @@ async def worker_loop(app: FastAPI) -> None:
                 completed_at_dt=completed_at,
                 error={"code": exc.code, "message": exc.message, "line": exc.line},
             )
+        except InferenceRuntimeError as exc:
+            completed_at = utc_now()
+            job.update(
+                status="failed",
+                updated_at=completed_at.isoformat(),
+                completed_at=completed_at.isoformat(),
+                completed_at_dt=completed_at,
+                error={"code": exc.code, "message": exc.message},
+            )
         except Exception:
+            LOGGER.exception("Unexpected RNABag inference failure for analysis %s", job_id)
             completed_at = utc_now()
             job.update(
                 status="failed",
@@ -146,22 +163,38 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="RNABag Local API",
-    version="0.1.0",
-    description="Local prototype API. Predictions currently use a deterministic mock adapter.",
+    version="0.2.0",
+    description="Local RNABag API backed by the project checkpoints.",
     lifespan=lifespan,
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["null"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-RNABag-Filename"],
 )
 
 
 @app.get("/api/v1/health/live")
 async def health_live() -> dict[str, str]:
-    return {"status": "ok", "mode": "mock"}
+    return {"status": "ok", "mode": "checkpoint"}
 
 
 @app.get("/api/v1/health/ready")
 async def health_ready(request: Request) -> dict[str, Any]:
+    try:
+        assets = runtime_asset_summary()
+    except InferenceRuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
     return {
         "status": "ready",
-        "mode": "mock",
+        "mode": "checkpoint",
+        **assets,
         "queue_size": request.app.state.queue.qsize(),
         "queue_capacity": QUEUE_CAPACITY,
     }
@@ -169,7 +202,7 @@ async def health_ready(request: Request) -> dict[str, Any]:
 
 @app.get("/api/v1/tasks")
 async def list_tasks() -> dict[str, Any]:
-    return {"mode": "mock", "tasks": public_task_catalog()}
+    return {"mode": "checkpoint", "tasks": public_task_catalog()}
 
 
 @app.post("/api/v1/analyses", status_code=status.HTTP_202_ACCEPTED)
@@ -267,7 +300,7 @@ async def create_analysis(
         "created_at": created_at,
         "updated_at": created_at,
         "path": str(upload_path),
-        "mode": "mock",
+        "mode": "checkpoint",
     }
     request.app.state.jobs[job_id] = job
     try:

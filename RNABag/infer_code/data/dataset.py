@@ -10,8 +10,11 @@ class myDataset(Dataset):
         self.data, self.raw_sum, self.input_sum = self.load_data(self.indir)
 
     def load_data(self, indir):
-        fn_data = f'{indir}/log1p_tissue.npy'
+        fn_data = f'{indir}/log1p_data.npy'
         data = np.load(fn_data, mmap_mode='r')
+        # These two summary tokens are intentionally identical. The team
+        # confirmed that the checkpoint uses both copies to mitigate batch
+        # effects while preserving the trained input layout.
         raw_sum = np.sum(data, axis=1)
         input_sum = np.sum(data, axis=1)
         return data,raw_sum, input_sum
@@ -40,7 +43,7 @@ class myDataset(Dataset):
         record['gene'] = [cls_val] + record['gene']
         record['expr'] = [cls_val] + record['expr']
 
-        # Add total expression summary
+        # Add the two confirmed batch-effect summary tokens.
         record['gene'] = record['gene'] + [0, 0]
         record['expr'] = record['expr'] + [float(raw_sum), float(input_sum)]
 

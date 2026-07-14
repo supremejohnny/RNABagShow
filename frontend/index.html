@@ -327,7 +327,7 @@
 <body>
   <nav class="nav">
     <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>RNABag Studio</a>
-    <div class="nav-right"><span class="status">Interactive prototype</span><a href="#workspace">任务工作台</a><a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper ↗</a></div>
+    <div class="nav-right"><span class="status">Local checkpoint prototype</span><a href="#workspace">任务工作台</a><a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper ↗</a></div>
   </nav>
 
   <main id="top">
@@ -398,11 +398,11 @@
               </div>
 
               <div class="result-card">
-                <div class="result-head"><div><small>Graphical output</small><strong id="result-title">Prediction preview</strong></div><span class="demo-badge" id="result-badge">LOCAL MOCK</span></div>
-                <div class="chart" id="chart"><div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整校验与 mock 输出。</p></div></div>
+                <div class="result-head"><div><small>Graphical output</small><strong id="result-title">Prediction preview</strong></div><span class="demo-badge" id="result-badge">RNABAG CHECKPOINT</span></div>
+                <div class="chart" id="chart"><div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div></div>
                 <div class="result-summary" id="result-summary"><small>Expected output</small><strong id="expected-output">Healthy / Cancer</strong></div>
                 <button class="button run" id="run-demo" type="button">提交本地分析</button>
-                <p class="disclaimer">当前返回可复现的 mock 结果，未运行 RNABag checkpoint，不用于临床诊断。</p>
+                <p class="disclaimer">当前结果由 RNABag checkpoint 在本地生成，仅限研究展示，不用于临床诊断。</p>
               </div>
             </div>
           </section>
@@ -422,6 +422,13 @@
     const pageParams = new URLSearchParams(window.location.search);
     const isLab = pageParams.get("mode") === "lab";
     if (isLab) document.body.classList.add("lab-mode");
+
+    const backendOrigin = "http://127.0.0.1:8000";
+    const isBackendOrigin = ["127.0.0.1", "localhost"].includes(window.location.hostname) && window.location.port === "8000";
+    const isAlternateLocalOrigin = window.location.protocol === "file:" || ["127.0.0.1", "localhost"].includes(window.location.hostname);
+    const apiBaseUrl = !isBackendOrigin && isAlternateLocalOrigin ? backendOrigin : "";
+    const apiUrl = path => `${apiBaseUrl}${path}`;
+    if (apiBaseUrl) document.querySelector(".status").textContent = "Local API · 127.0.0.1:8000";
 
     const sampleData = {
       tissue: { path: "samples/rnabag_demo_fpkm_tissue_100.tsv", label: "tissue RNA" },
@@ -508,7 +515,7 @@
 
     function selectInput(key) { activeInput = key; activeTask = Object.keys(inputs[key].tasks)[0]; renderInputList(); renderTasks(); renderPanel(); }
     function selectTask(key) { activeTask = key; renderTasks(); renderPanel(); }
-    function resetChart() { $("#result-title").textContent = "Prediction preview"; $("#result-badge").textContent = "LOCAL MOCK"; $("#chart").innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整校验与 mock 输出。</p></div>`; $("#result-summary").innerHTML = `<small>Expected output</small><strong id="expected-output">${inputs[activeInput].tasks[activeTask].expected}</strong>`; }
+    function resetChart() { $("#result-title").textContent = "Prediction preview"; $("#result-badge").textContent = "RNABAG CHECKPOINT"; $("#chart").innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div>`; $("#result-summary").innerHTML = `<small>Expected output</small><strong id="expected-output">${inputs[activeInput].tasks[activeTask].expected}</strong>`; }
 
     function setRunState(running, label = "提交本地分析") {
       const button = $("#run-demo");
@@ -535,7 +542,7 @@
       return payload;
     }
 
-    function renderMockResult(result) {
+    function renderResult(result) {
       const task = inputs[activeInput].tasks[activeTask];
       const prediction = result.predictions[0];
       const rows = prediction.scores.slice(0, task.type === "binary" ? 2 : 5).map(item => ({
@@ -547,19 +554,20 @@
       } else {
         $("#chart").innerHTML = `<div>${rows.map(row => `<div class="rank-row"><strong>${row.label}</strong><div class="bar"><i data-width="${row.value}"></i></div><span>${row.value}%</span></div>`).join("")}</div>`;
       }
-      const top = rows[0];
+      const predicted = prediction.scores.find(item => item.label === prediction.predicted_label) || prediction.scores[0];
+      const predictedValue = Math.round(predicted.score * 1000) / 10;
       const sampleId = escapeHtml(prediction.sample_id);
       const extra = result.predictions.length > 1 ? ` · 共 ${result.predictions.length} 个样本，当前展示第 1 个` : "";
-      $("#result-title").textContent = "Mock prediction";
-      $("#result-badge").textContent = "NOT A CHECKPOINT";
-      $("#result-summary").innerHTML = `<small>Top mock prediction · ${sampleId}${extra}</small><strong>${top.label} · ${top.value}%</strong>`;
+      $("#result-title").textContent = "RNABag prediction";
+      $("#result-badge").textContent = "CHECKPOINT";
+      $("#result-summary").innerHTML = `<small>Predicted class · ${sampleId}${extra}</small><strong>${escapeHtml(prediction.predicted_label)} · ${predictedValue}%</strong>`;
       requestAnimationFrame(() => document.querySelectorAll("[data-width]").forEach(bar => bar.style.width = `${bar.dataset.width}%`));
 
       const summary = result.input_summary;
-      const duplicateText = summary.duplicate_gene_rows ? `；检出 ${summary.duplicate_gene_rows} 个重复 GeneID 行，候选规则为按和聚合（待团队确认）` : "";
+      const duplicateText = summary.duplicate_gene_rows ? `；检出 ${summary.duplicate_gene_rows} 个重复 GeneID 行，按输入顺序保留第一次出现并丢弃后续重复行` : "";
       const box = $("#validation");
       box.className = `validation show ${summary.duplicate_gene_rows ? "warn" : "ok"}`;
-      box.textContent = `✓ 服务端完整校验 · ${summary.gene_rows} 个基因行 · ${summary.sample_count} 个样本${duplicateText}`;
+      box.textContent = `✓ 服务端完整校验 · ${summary.gene_rows} 个基因行 · ${summary.sample_count} 个样本 · GeneID 映射 ${summary.mapped_unique_gene_ids}/${summary.unique_gene_ids} · HVG ${summary.model_hvg_found}/${summary.model_hvg_total}${duplicateText}`;
     }
 
     async function runAnalysis() {
@@ -575,20 +583,20 @@
       setRunState(true, "正在上传…");
       showProgress("正在将 TSV 发送给本地 RNABag API…");
       try {
-        const created = await readJson(await fetch(`/api/v1/analyses?task=${encodeURIComponent(task.apiTask)}`, {
+        const created = await readJson(await fetch(apiUrl(`/api/v1/analyses?task=${encodeURIComponent(task.apiTask)}`), {
           method: "POST",
           headers: { "Content-Type": "text/tab-separated-values", "X-RNABag-Filename": encodeURIComponent(selectedFile.name) },
           body: selectedFile
         }));
         while (run === activeRun) {
-          const job = await readJson(await fetch(`/api/v1/analyses/${created.analysis_id}`));
+          const job = await readJson(await fetch(apiUrl(`/api/v1/analyses/${created.analysis_id}`)));
           if (job.status === "succeeded") {
-            renderMockResult(await readJson(await fetch(`/api/v1/analyses/${created.analysis_id}/result`)));
+            renderResult(await readJson(await fetch(apiUrl(`/api/v1/analyses/${created.analysis_id}/result`))));
             return;
           }
           if (job.status === "failed") throw new Error(job.error?.message || "Local analysis failed.");
           setRunState(true, job.status === "validating" ? "正在完整校验…" : "已进入队列…");
-          showProgress(job.status === "validating" ? "正在扫描全部基因行并生成确定性 mock 结果…" : "分析已进入本地单工作者队列…");
+          showProgress(job.status === "validating" ? "正在校验基因、生成 4096 HVG 矩阵并运行 RNABag checkpoint…" : "分析已进入本地单工作者队列…");
           await new Promise(resolve => setTimeout(resolve, 450));
         }
       } catch (error) {
@@ -607,13 +615,15 @@
       selectedFile = null;
       if (!file.name.toLowerCase().endsWith(".tsv")) { box.className = "validation show warn"; box.textContent = "格式不匹配：请选择 .tsv 文件，而不是 CSV 或 Excel 文件。"; return false; }
       const text = await file.slice(0, 160000).text();
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      const headers = (lines[0] || "").split("\t");
-      const geneHeader = (headers[0] || "").trim().toLowerCase();
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      const headerIndex = lines.slice(0, 5).findIndex(line => ["geneid", "gene_id", "gene"].includes(((line.split("\t")[0] || "").replace(/^\uFEFF/, "").trim().toLowerCase())));
+      const headers = (lines[headerIndex >= 0 ? headerIndex : 0] || "").split("\t");
+      const geneHeader = (headers[0] || "").replace(/^\uFEFF/, "").trim().toLowerCase();
       const hasGene = ["geneid", "gene_id", "gene"].includes(geneHeader);
       const tabular = headers.length > 1;
       let numeric = true;
-      lines.slice(1, 21).forEach(line => line.split("\t").slice(1).forEach(value => { if (value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0)) numeric = false; }));
+      const dataStart = headerIndex >= 0 ? headerIndex + 1 : 1;
+      lines.slice(dataStart, dataStart + 20).forEach(line => line.split("\t").slice(1).forEach(value => { if (value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0)) numeric = false; }));
       const issues = [];
       if (!tabular) issues.push("未检测到 Tab 分隔的样本列");
       if (!hasGene) issues.push("第一列建议命名为 GeneID");
@@ -621,7 +631,7 @@
       if (issues.length) { box.className = "validation show warn"; box.textContent = `${file.name} · ${issues.join("；")}`; return false; }
       selectedFile = file;
       box.className = "validation show ok";
-      box.textContent = `✓ 基础格式通过 · ${headers.length - 1} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - 1))} 个基因行 · 提交后将完整校验`;
+      box.textContent = `✓ 基础格式通过 · ${headers.length - 1} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - dataStart))} 个基因行 · 提交后将完整校验`;
       return true;
     }
 

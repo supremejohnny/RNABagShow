@@ -45,25 +45,28 @@ Before running inference, raw RNA-seq data (FPKM) must be processed and transfor
 
 **Key inputs required:**
 - `fpkm.tsv`: Raw expression data.
-- `gene_mapping.tsv`: Annotation file mapping GeneID to Symbol.
-- `info.txt`: Sample metadata for tissue mapping.
+- `mapping/Human_GRCh38.p13_annot.tsv`: Default annotation mapping GeneID to Symbol.
 - `tcga_hvg_gene_4096.txt`: List of 4096 High Variability Genes.
 
 **Command to run processing:**
 ```bash
 python data/process_data.py \
     --fpkm path/to/fpkm.tsv \
-    --mapping path/to/gene_mapping.tsv \
-    --info path/to/info.txt \
     --out output_dir
 ```
-*The output will include `log1p_tissue.npy`.*
+*The output will include `log1p_data.npy`. For duplicate GeneID/Symbol rows,
+input order is preserved and only the first occurrence is retained. Current
+Symbols take priority, with a conservative unique historical-Synonym fallback;
+see `data/README.md` for the preprocessing contract and future golden-data
+review note.*
 
 ### 2. Downsteam Tasks
 Once the data is processed, you can use the `infer_code` module to predict cancer presence or tissue origin.
 
 **Setup:**
-1. Install dependencies: `pip install -r infer_code/requirements.txt`
+1. The legacy `infer_code/requirements.txt` is a Conda environment export,
+   despite its filename. Create it with
+   `conda env create -f infer_code/requirements.txt`, not `pip install -r`.
 2. Ensure checkpoints (e.g., `Tissue_cancer_detect.ckpt`) are in `infer_code/checkpoints/`.
 
 **Command to run:**
@@ -79,8 +82,8 @@ task_name :
     - platelet_tumor_local
 
 ```
-*Note: The `--tag` argument should match the prefix of your processed files (e.g., if files are `log1p_tissue.npy`, use `--tag clinic_pancreas`).*
-check data path: `infer_code/config/config.py`
+Set `indir` in `infer_code/config/config.py` to the directory containing
+`log1p_data.npy` before running inference.
 
 ---
 
