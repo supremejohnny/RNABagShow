@@ -95,7 +95,10 @@ The first run creates
 `/home/johnny/services/rnabag/config/nginx-intranet.conf` with mode `0600`,
 validates it with `nginx -t`, starts the gateway, and checks the proxied
 readiness endpoint. The current defaults expose
-`http://172.16.17.4:8080/` only to `172.16.17.0/24`.
+`http://172.16.17.4:8080/` only to the routed VPN client network
+`172.28.0.0/24`. The host firewall must independently allow TCP 8080 from the
+same source CIDR; `johnny` intentionally does not have authority to change
+that system rule.
 
 Inspect or end intranet exposure with:
 

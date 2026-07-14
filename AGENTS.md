@@ -17,7 +17,8 @@ design in `harness/database/analysis-storage-schema.md` when that local file is
 available. Public exposure, public TLS/domain routing, application
 authentication, and SSO remain separate deployment decisions. A restricted
 Nginx reverse-proxy gateway bound to `172.16.17.4:8080` and allowlisting
-`172.16.17.0/24` is approved for the current intranet test phase only.
+the routed VPN client network `172.28.0.0/24` is approved for the current
+intranet test phase only.
 
 Never describe model output as a clinical diagnosis. Persistence is limited to
 the approved analysis metadata/result and private raw-upload object described
