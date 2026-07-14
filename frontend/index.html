@@ -105,7 +105,11 @@
     .stepbar span.active { color: var(--green); border-color: var(--green); }
 
     .workspace { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 680px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-    .sidebar { padding: 24px; background: #f8fafd; border-right: 1px solid var(--line); }
+    .sidebar { position: relative; isolation: isolate; padding: 24px; overflow: hidden; background: #f8fafd; border-right: 1px solid var(--line); }
+    .sidebar::before, .sidebar::after { content: ""; position: absolute; pointer-events: none; z-index: -1; }
+    .sidebar::before { width: 260px; height: 260px; right: -126px; bottom: -118px; border: 1px solid rgba(36, 88, 211, .16); border-radius: 50%; box-shadow: 0 0 0 24px rgba(36, 88, 211, .035), 0 0 0 52px rgba(121, 201, 191, .05); }
+    .sidebar::after { width: 94px; height: 94px; right: 8px; bottom: 39px; border: 1px dashed rgba(36, 88, 211, .18); border-radius: 50%; box-shadow: -68px 30px 0 -42px rgba(121, 201, 191, .42), -91px -9px 0 -43px rgba(36, 88, 211, .32), -38px -62px 0 -43px rgba(121, 201, 191, .34); }
+    .sidebar > * { position: relative; z-index: 1; }
     .side-label { margin: 0 0 14px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
     .input-list { display: grid; gap: 10px; }
     .input-card { width: 100%; display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 12px; padding: 13px; color: var(--ink); text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 14px; cursor: pointer; transition: .18s ease; }
@@ -308,6 +312,7 @@
       .stepbar { display: none; }
       .workspace { display: block; }
       .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .sidebar::before, .sidebar::after { opacity: .42; }
       .input-list { grid-template-columns: repeat(3, 1fr); }
       .input-card { display: block; text-align: center; padding: 11px 5px; }
       .input-icon { margin: 0 auto 7px; }
