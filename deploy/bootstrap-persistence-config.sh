@@ -45,6 +45,9 @@ S3_SECRET_KEY="$(openssl rand -hex 32)"
   printf 'RNABAG_S3_CONSOLE_PORT=9001\n'
   printf 'RNABAG_PERSISTENCE_ENABLED=true\n'
   printf 'RNABAG_TEMP_DIR=%s/runtime/uploads-tmp\n' "$DEPLOY_ROOT"
+  printf 'RNABAG_GATEWAY_BIND_IP=172.16.17.4\n'
+  printf 'RNABAG_GATEWAY_PORT=8080\n'
+  printf 'RNABAG_GATEWAY_ALLOWED_CIDR=172.16.17.0/24\n'
 } >"$CONFIG_FILE"
 
 chmod 600 "$CONFIG_FILE"

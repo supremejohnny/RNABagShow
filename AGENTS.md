@@ -14,8 +14,10 @@ mock: the frontend uploads an expression TSV to FastAPI and the backend runs
 the copied RNABag PyTorch checkpoints. The first PostgreSQL plus private
 S3-compatible object-storage persistence phase is approved and follows the
 design in `harness/database/analysis-storage-schema.md` when that local file is
-available. Public exposure, TLS, reverse proxy, domain routing,
-authentication, and SSO remain separate deployment decisions.
+available. Public exposure, public TLS/domain routing, application
+authentication, and SSO remain separate deployment decisions. A restricted
+Nginx reverse-proxy gateway bound to `172.16.17.4:8080` and allowlisting
+`172.16.17.0/24` is approved for the current intranet test phase only.
 
 Never describe model output as a clinical diagnosis. Persistence is limited to
 the approved analysis metadata/result and private raw-upload object described
@@ -56,8 +58,9 @@ secrets, or environment files in the repository checkout.
   private S3-compatible object operations, SHA-256 object reuse, recovery, and
   purge/reference handling.
 - `backend/migrations/`: ordered PostgreSQL schema migrations.
-- `deploy/`: persistence and CPU application Compose stacks, external-config
-  bootstrap, server smoke checks, and guarded test-data reset commands.
+- `deploy/`: persistence, CPU application, and restricted intranet gateway
+  Compose stacks, external-config bootstrap, server smoke checks, and guarded
+  test-data reset commands.
 - `backend/app/inference.py`: TSV validation, GeneID mapping, ordered 4096-HVG
   matrix construction, checkpoint loading, and prediction formatting.
 - `backend/app/catalog.py`: API task names, modalities, and label order.
@@ -141,6 +144,9 @@ docker compose --env-file deploy/persistence.env.example \
 RNABAG_UID="$(id -u)" RNABAG_GID="$(id -g)" \
   docker compose --env-file deploy/persistence.env.example \
   -f deploy/compose.app-cpu.yml config --quiet
+RNABAG_GATEWAY_CONFIG_FILE=/tmp/rnabag-nginx-intranet.conf \
+  docker compose --env-file deploy/persistence.env.example \
+  -f deploy/compose.gateway.yml config --quiet
 ```
 
 Keep unrelated user changes in a dirty worktree. Do not normalize or rewrite

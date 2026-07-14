@@ -1,13 +1,16 @@
 # RNABag server deployment
 
-The server deployment has two Compose projects:
+The server deployment has three Compose projects:
 
 - `compose.persistence.yml`: PostgreSQL and private MinIO.
 - `compose.app-cpu.yml`: one managed FastAPI/Uvicorn process for the frontend,
   API, queue, and CPU inference.
+- `compose.gateway.yml`: optional Nginx access restricted to the approved
+  intranet CIDR. It exposes only the application, never PostgreSQL or MinIO.
 
-Every service listens on server loopback only. Mutable data and secrets stay
-outside the Git checkout under the deployment root. The application mounts the
+FastAPI, PostgreSQL, and MinIO listen on server loopback only. The optional
+gateway is the sole intranet listener. Mutable data and secrets stay outside
+the Git checkout under the deployment root. The application mounts the
 checkout read-only, so deployment commands cannot modify repository files.
 
 Server layout:
@@ -79,6 +82,33 @@ Inspect or stop the application with:
 `app-down.sh` stops only FastAPI. PostgreSQL and MinIO continue running. Use
 `persistence-down.sh` when those services should also stop.
 
+## Restricted intranet access
+
+FastAPI stays bound to server loopback. Start the separate Nginx gateway only
+when teammates need direct intranet access:
+
+```bash
+./deploy/gateway-up.sh
+```
+
+The first run creates
+`/home/johnny/services/rnabag/config/nginx-intranet.conf` with mode `0600`,
+validates it with `nginx -t`, starts the gateway, and checks the proxied
+readiness endpoint. The current defaults expose
+`http://172.16.17.4:8080/` only to `172.16.17.0/24`.
+
+Inspect or end intranet exposure with:
+
+```bash
+./deploy/gateway-status.sh
+./deploy/gateway-down.sh
+```
+
+`gateway-down.sh` removes only the Nginx gateway container. FastAPI remains on
+loopback and PostgreSQL/MinIO keep running. The external Nginx config is
+preserved for the next start. Public exposure still requires a separate TLS,
+authentication, rate-limit, and network review.
+
 ## Viewing the server page
 
 Keep the HTTP service on loopback until authentication, TLS, rate limiting, and
@@ -94,10 +124,10 @@ showing the frontend served by the server FastAPI process, and uploads go back
 through the same tunnel to the server API. Port 18000 is only the local end of
 the tunnel; use another unused local port if necessary.
 
-This is an internal staging deployment. A later public deployment would put a
-TLS reverse proxy on port 443 in front of the same loopback-only FastAPI
-service. The current application has no login, so it must not be opened to the
-public internet yet.
+This is an internal staging deployment. A later public deployment would evolve
+the gateway to a TLS reverse proxy on port 443 in front of the same
+loopback-only FastAPI service. The current application has no login, so the
+intranet gateway must not be repurposed as a public listener.
 
 ## Inspecting test data
 
