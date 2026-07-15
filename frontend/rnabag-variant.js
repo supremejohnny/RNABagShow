@@ -44,6 +44,8 @@
   }
   const taskLabels = { cancer: "Cancer detection", origin: "Tissue origin · 36 classes", location: "Tumor localization · 5 classes" };
   const state = { activeInput: "tissue", activeTask: "cancer", selectedFile: null, runToken: 0, analysisId: null, status: "ready", lastStatus: "" };
+  let programmaticStep = null;
+  let programmaticSettleTimer = 0;
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>'"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;" })[character]);
@@ -53,8 +55,12 @@
   function panelNode(step) { return $(`[data-panel-step="${step}"]`); }
   function ui(step, selector) { return $(selector, panelNode(step) || document); }
   function workflowSteps() { return $$("[data-workflow-step]"); }
+  function compactLayout() { return window.matchMedia("(max-width: 759px)").matches; }
+  function scrollNodeForStep(step) { return compactLayout() ? panelNode(step) : stepNode(step); }
+  function scrollStepNodes() { return compactLayout() ? $$('[data-panel-step]') : workflowSteps(); }
+  function stepForScrollNode(node) { return node?.dataset.panelStep || node?.id || "step-input"; }
   function workflowOffset() {
-    return (isLab ? 0 : ($(".nav")?.offsetHeight || 0)) + ($(".workflow-nav")?.offsetHeight || 0) + 12;
+    return (isLab ? 0 : ($(".nav")?.offsetHeight || 0)) + ($(".workflow-nav")?.offsetHeight || 0);
   }
   function setStepStates() {
     const states = {
@@ -82,7 +88,7 @@
     if (source === "natural") history.replaceState(null, "", `#${step}`);
   }
   function setActivePanel(step) {
-    const compact = window.matchMedia("(max-width: 759px)").matches;
+    const compact = compactLayout();
     $$('[data-panel-step]').forEach(panel => {
       const active = panel.dataset.panelStep === step;
       panel.classList.toggle("active", active);
@@ -91,14 +97,33 @@
       panel.inert = compact ? false : !active;
     });
   }
+  function naturalStepAtProbe(nodes = scrollStepNodes()) {
+    const probe = workflowOffset() + Math.min(innerHeight * .3, 220);
+    let active = nodes[0];
+    nodes.forEach(node => { if (node.getBoundingClientRect().top <= probe) active = node; });
+    return stepForScrollNode(active);
+  }
+  function settleProgrammaticScroll() {
+    window.clearTimeout(programmaticSettleTimer);
+    programmaticSettleTimer = window.setTimeout(() => {
+      const intendedStep = programmaticStep;
+      programmaticStep = null;
+      if (!intendedStep) return;
+      const target = scrollNodeForStep(intendedStep);
+      const reachedTarget = target && Math.abs(target.getBoundingClientRect().top - workflowOffset()) <= 24;
+      setActiveStep(reachedTarget ? intendedStep : naturalStepAtProbe(), reachedTarget ? "programmatic" : "natural");
+    }, reducedMotion.matches ? 40 : 160);
+  }
   function scrollToStep(step, mode = "replace") {
-    const target = stepNode(step);
+    const target = scrollNodeForStep(step);
     if (!target) return;
     if (mode === "replace") history.replaceState(null, "", `#${step}`);
     else if (mode === "push") history.pushState(null, "", `#${step}`);
+    programmaticStep = step;
     setActiveStep(step, "programmatic");
     const top = window.scrollY + target.getBoundingClientRect().top - workflowOffset();
     window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion.matches ? "auto" : "smooth" });
+    settleProgrammaticScroll();
   }
   window.rnabagScrollToStep = scrollToStep;
 
@@ -275,34 +300,64 @@
     });
   }
   function bindNavigation() {
-    $$('a[data-step-target]').forEach(link => link.addEventListener("click", event => { event.preventDefault(); scrollToStep(link.dataset.stepTarget, "replace"); }));
+    $$('a[href^="#step-"]').forEach(link => link.addEventListener("click", event => {
+      event.preventDefault();
+      scrollToStep(link.dataset.stepTarget || link.getAttribute("href").slice(1), "replace");
+    }));
     $$("[data-restart]").forEach(button => button.addEventListener("click", () => { state.activeInput = "tissue"; state.activeTask = "cancer"; state.runToken += 1; renderInputs(); renderTasks(); renderTaskDetail(); scrollToStep("step-input"); }));
   }
   function bindScrollState() {
-    const observer = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
-      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible) setActiveStep(visible.target.id, "natural");
+    const observedSteps = scrollStepNodes();
+    const observer = "IntersectionObserver" in window ? new IntersectionObserver(() => {
+      if (programmaticStep) return;
+      setActiveStep(naturalStepAtProbe(observedSteps), "natural");
     }, { rootMargin: `-${workflowOffset()}px 0px -52% 0px`, threshold: [0, .2, .5, .8] }) : null;
-    workflowSteps().forEach(step => observer ? observer.observe(step) : null);
+    observedSteps.forEach(step => observer ? observer.observe(step) : null);
     let frame = 0;
     window.addEventListener("scroll", () => {
+      if (programmaticStep) { settleProgrammaticScroll(); return; }
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         if (observer) return;
-        const probe = workflowOffset() + Math.min(innerHeight * .3, 220);
-        let active = workflowSteps()[0];
-        workflowSteps().forEach(step => { if (step.getBoundingClientRect().top <= probe) active = step; });
-        if (active) setActiveStep(active.id, "natural");
+        setActiveStep(naturalStepAtProbe(observedSteps), "natural");
       });
     }, { passive: true });
+  }
+  function bindOverviewLightbox() {
+    const figure = $(".overview-figure");
+    const lightbox = $(".overview-lightbox");
+    if (!figure || !lightbox) return;
+    const open = () => {
+      lightbox.classList.add("is-open");
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overview-lightbox-open");
+    };
+    const close = () => {
+      lightbox.classList.remove("is-open");
+      lightbox.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("overview-lightbox-open");
+      figure.focus({ preventScroll: true });
+    };
+    figure.addEventListener("click", open);
+    figure.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+    });
+    lightbox.addEventListener("click", close);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && lightbox.classList.contains("is-open")) close();
+    });
   }
 
   if (apiBaseUrl && $(".status")) $(".status").textContent = "Local API · 127.0.0.1:8000";
   $$(".js-run").forEach(button => button.addEventListener("click", runAnalysis));
-  renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState();
+  renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
   const initialStep = /^#step-(input|task|validate|result)$/.test(window.location.hash) ? window.location.hash.slice(1) : "step-input";
   setActiveStep(initialStep, "programmatic");
-  if (window.location.hash) window.setTimeout(() => scrollToStep(initialStep), 0);
+  if (window.location.hash) {
+    const alignInitialStep = () => window.setTimeout(() => scrollToStep(initialStep), 0);
+    if (document.readyState === "complete") alignInitialStep();
+    else window.addEventListener("load", alignInitialStep, { once: true });
+  }
   window.addEventListener("resize", () => { if (variant === "two") setActivePanel(document.body.dataset.activeStep || "step-input"); });
 })();
