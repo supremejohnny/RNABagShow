@@ -167,7 +167,7 @@
     .upload { margin-top: 20px; position: relative; }
     .dropzone { display: block; padding: 22px; text-align: center; border: 1.5px dashed #aeb9c9; border-radius: 9px; background: #fbfcfe; cursor: pointer; transition: .18s; }
     .dropzone:hover, .dropzone.drag { background: var(--green-soft); border-color: var(--green); }
-    .dropzone input { position: absolute; opacity: 0; pointer-events: none; }
+    .dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     .drop-icon { width: 37px; height: 37px; display: grid; place-items: center; margin: 0 auto 8px; border-radius: 50%; background: var(--green-soft); color: var(--green); font-weight: 900; }
     .dropzone strong, .dropzone span { display: block; }
     .dropzone strong { font-size: 12px; }
@@ -327,12 +327,216 @@
       footer { display: block; }
       footer span { display: block; margin-top: 6px; }
     }
+
+    /* Guided vertical workflow: one focused viewport-sized chapter per step. */
+    .model-overview {
+      width: 100%;
+      height: calc(100vh - 60px);
+      height: calc(100svh - 60px);
+      min-height: 0;
+      overflow: clip;
+    }
+    .overview-inner { height: 100%; }
+    .overview-figure img { max-height: calc(100svh - 146px); object-fit: contain; }
+
+    .studio { padding-bottom: 0; }
+    .workflow-nav {
+      position: sticky;
+      top: 60px;
+      z-index: 18;
+      margin: 0;
+      background: rgba(241, 244, 248, .92);
+      border: 1px solid var(--line);
+      border-radius: 12px 12px 0 0;
+      box-shadow: 0 12px 28px rgba(35, 48, 73, .08);
+      backdrop-filter: blur(18px);
+    }
+    .workflow-nav-inner { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .workflow-link {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      padding: 15px 16px 13px;
+      color: var(--muted);
+      border-bottom: 3px solid #ccd4cc;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .workflow-link + .workflow-link { border-left: 1px solid rgba(219, 226, 236, .7); }
+    .workflow-link span { font: 800 10px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .workflow-link strong { overflow: hidden; text-overflow: ellipsis; font-size: 11px; letter-spacing: .08em; }
+    .workflow-link:hover { color: var(--ink); background: rgba(255, 255, 255, .58); }
+    .workflow-link.active, .workflow-link[aria-current="step"] { color: var(--green); border-bottom-color: var(--green); background: rgba(255, 255, 255, .8); }
+
+    .workspace {
+      display: block;
+      min-height: 0;
+      overflow: visible;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .workflow-section {
+      min-height: calc(100vh - 117px);
+      min-height: calc(100svh - 117px);
+      display: grid;
+      align-content: center;
+      padding: clamp(54px, 7vh, 86px) 0;
+      scroll-margin-top: 117px;
+      border-bottom: 1px solid var(--line);
+    }
+    .workflow-section:last-child { border-bottom: 0; }
+    .workflow-section-inner { width: 100%; }
+    .workflow-section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 470px);
+      align-items: end;
+      gap: 36px;
+      margin-bottom: 28px;
+    }
+    .workflow-kicker { margin: 0 0 8px; color: var(--green); font: 800 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
+    .workflow-section-head h3 { margin: 0; font-size: clamp(31px, 4.2vw, 54px); line-height: 1; letter-spacing: -.05em; }
+    .workflow-section-head > p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .input-stage {
+      padding: clamp(22px, 3vw, 38px);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .input-stage .input-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .input-stage .input-card { min-height: 148px; grid-template-columns: 58px 1fr; align-content: center; padding: 22px; border-radius: 12px; }
+    .input-stage .input-icon { width: 58px; height: 58px; font-size: 15px; }
+    .input-stage .input-name strong { font-size: 18px; }
+    .input-stage .input-name span { font-size: 12px; }
+    .input-stage .input-count { grid-column: 2; font: 700 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; text-transform: uppercase; }
+    .input-stage .scope-note { max-width: 720px; margin: 20px 0 0; background: #f8fafd; }
+
+    .task-layout { display: grid; grid-template-columns: minmax(240px, .34fr) minmax(0, 1fr); gap: 22px; }
+    .task-picker, .task-header, .contract-surface, .upload-surface {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 34px rgba(35, 48, 73, .07);
+    }
+    .task-picker { padding: 24px; }
+    .task-picker .task-area { margin: 0; }
+    .task-picker .task-button { min-height: 54px; font-size: 14px; }
+    .task-header { padding: clamp(26px, 4vw, 48px); }
+    .task-header h4 { margin: 5px 0 10px; font-size: clamp(28px, 4vw, 45px); letter-spacing: -.045em; line-height: 1.05; }
+    .task-header .task-summary-grid { min-height: 0; margin-top: 28px; }
+    .task-header .task-summary-grid p { font-size: 13px; line-height: 1.65; }
+    .task-header .task-specs { gap: 6px; }
+    .task-header .task-specs li { font-size: 12px; }
+
+    .validate-layout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); gap: 22px; align-items: stretch; }
+    .contract-surface, .upload-surface { padding: clamp(24px, 3.5vw, 42px); }
+    .contract-surface .contract-lede { font-size: 13px; line-height: 1.65; }
+    .contract-surface .contract-row { grid-template-columns: 130px 1fr; padding: 13px 0; }
+    .contract-surface .contract-row dt { font-size: 12px; }
+    .contract-surface .contract-row dd, .contract-surface .contract-row code { font-size: 11px; }
+    .contract-surface .schema { margin-top: 20px; font-size: 11px; }
+    .contract-surface .schema-row span { padding: 10px 12px; }
+    .upload-surface { display: flex; flex-direction: column; }
+    .upload-surface .upload { margin: 0; display: flex; flex: 1; flex-direction: column; }
+    .upload-surface .dropzone { flex: 1; min-height: 230px; display: grid; place-content: center; padding: 30px; }
+    .upload-surface .drop-icon { width: 48px; height: 48px; }
+    .upload-surface .dropzone strong { font-size: 15px; }
+    .upload-surface .dropzone span { font-size: 11px; }
+    .upload-surface .sample-options { margin-top: 14px; }
+
+    .result-stage { max-width: 980px; margin: 0 auto; }
+    .result-stage .result-card { min-height: min(610px, calc(100svh - 190px)); padding: clamp(24px, 4vw, 44px); }
+    .result-stage .result-head strong { font-size: 22px; }
+    .result-stage .chart { min-height: 280px; }
+    .result-stage .result-summary { padding: 16px 18px; }
+    .result-stage .run { min-height: 48px; }
+
+    body.lab-mode .studio { padding: 18px 28px 0; }
+    body.lab-mode .workflow-nav { top: 0; }
+    body.lab-mode .workflow-section { min-height: calc(100vh - 56px); min-height: calc(100svh - 56px); scroll-margin-top: 56px; }
+    body.lab-mode .workspace { display: block; min-height: 0; }
+    body.lab-mode .task-header { padding: 36px; }
+
+    @media (max-height: 820px) {
+      .model-overview { padding-top: 20px; padding-bottom: 20px; }
+      .overview-copy .eyebrow { margin-bottom: 8px; }
+      .overview-body { margin-top: 14px; gap: 8px; }
+      .overview-body .overview-placeholder:last-child { display: none; }
+      .overview-points { margin-top: 16px; }
+      .overview-point { padding: 8px 0; }
+      .overview-actions { margin-top: 14px; }
+      .workflow-section { padding-top: 42px; padding-bottom: 42px; }
+      .workflow-section-head { margin-bottom: 20px; }
+      .result-stage .result-card { min-height: calc(100svh - 170px); }
+    }
+    @media (max-height: 690px) and (min-width: 761px) {
+      .overview-body .overview-placeholder { display: none; }
+      .overview-point p { display: none; }
+      .overview-point { padding: 7px 0; }
+      .overview-figure figcaption { display: none; }
+      .overview-figure img { max-height: calc(100svh - 100px); }
+    }
+    @media (max-width: 1050px) and (min-width: 761px) {
+      .overview-inner { grid-template-columns: minmax(310px, .82fr) minmax(0, 1.18fr); gap: 32px; }
+      .overview-figure { margin-top: 0; }
+      .overview-body .overview-placeholder { display: none; }
+      .overview-copy h1 { font-size: clamp(34px, 4.3vw, 46px); }
+      .task-layout { grid-template-columns: 220px minmax(0, 1fr); }
+      .validate-layout { grid-template-columns: 1fr; }
+      .upload-surface .dropzone { min-height: 180px; }
+    }
+    @media (max-width: 760px) {
+      .nav-right { gap: 12px; font-size: 12px; }
+      .nav-right a:last-child { display: none; }
+      .model-overview { height: calc(100svh - 60px); padding: 20px; }
+      .overview-inner { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 16px; }
+      .overview-copy h1 { font-size: clamp(30px, 9vw, 42px); }
+      .overview-body { margin-top: 12px; }
+      .overview-body p { font-size: 11px; line-height: 1.55; }
+      .overview-body .overview-placeholder, .overview-points { display: none; }
+      .overview-actions { margin-top: 14px; }
+      .overview-actions .button { padding: 10px 14px; font-size: 12px; }
+      .overview-figure { min-height: 0; margin: 0; display: grid; }
+      .overview-figure img { width: 100%; height: 100%; max-height: none; object-fit: contain; }
+      .overview-figure figcaption { display: none; }
+      .studio { padding: 48px 16px 0; }
+      .workflow-nav { top: 60px; margin-left: -8px; margin-right: -8px; }
+      .workflow-link { justify-content: center; gap: 5px; padding: 13px 5px 11px; }
+      .workflow-link strong { font-size: 9px; letter-spacing: .03em; }
+      .workflow-section { min-height: calc(100svh - 111px); padding: 42px 0 54px; scroll-margin-top: 111px; }
+      .workflow-section-head { display: block; margin-bottom: 20px; }
+      .workflow-section-head h3 { font-size: 36px; }
+      .workflow-section-head > p { margin-top: 12px; }
+      .input-stage { padding: 14px; }
+      .input-stage .input-list { grid-template-columns: 1fr; }
+      .input-stage .input-card { min-height: 92px; display: grid; grid-template-columns: 48px 1fr auto; text-align: left; padding: 16px; }
+      .input-stage .input-icon { width: 48px; height: 48px; margin: 0; }
+      .input-stage .input-count { grid-column: auto; }
+      .input-stage .input-name span { display: block; }
+      .input-stage .scope-note { display: block; }
+      .task-layout, .validate-layout { grid-template-columns: 1fr; }
+      .task-picker, .task-header, .contract-surface, .upload-surface { padding: 20px; }
+      .task-header .task-summary-grid { grid-template-columns: 1fr; }
+      .task-header .summary-column + .summary-column { padding-left: 0; border-left: 0; }
+      .contract-surface .contract-row { grid-template-columns: 1fr; gap: 5px; }
+      .upload-surface .dropzone { min-height: 190px; }
+      .result-stage .result-card { min-height: calc(100svh - 165px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
   </style>
 </head>
 <body>
   <nav class="nav">
     <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>RNABag Studio</a>
-    <div class="nav-right"><span class="status">Local checkpoint prototype</span><a href="#workspace">任务工作台</a><a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper ↗</a></div>
+    <div class="nav-right"><span class="status">Local checkpoint prototype</span><a href="#step-input">任务工作台</a><a href="https://www.biorxiv.org/content/10.64898/2026.04.19.719450v1" target="_blank" rel="noreferrer">Paper ↗</a></div>
   </nav>
 
   <main id="top">
@@ -351,7 +555,7 @@
             <div class="overview-point"><span>02</span><div><strong>跨样本任务</strong><p>同一编码器支持组织、cfRNA 与血小板输入，通过不同预测头完成下游任务。</p></div></div>
             <div class="overview-point"><span>03</span><div><strong>可解释输出</strong><p>从样本级预测回到基因与通路贡献，让模型结果与生物学问题对齐。</p></div></div>
           </div>
-          <div class="overview-actions"><a class="button primary" href="#workspace">开始快速演示</a><a class="button ghost" href="ranbag_lab.html">进入 RNABag Lab ↗</a></div>
+          <div class="overview-actions"><a class="button primary" href="#step-input">开始快速演示</a><a class="button ghost" href="ranbag_lab.html#step-input">进入 RNABag Lab ↗</a></div>
         </div>
         <figure class="overview-figure" role="button" tabindex="0" aria-label="放大 RNABag 模型总览图">
           <img src="../asset/overview.png" alt="RNABag 数据准备、模型架构、下游任务、外部数据集、液体活检与可解释性总览">
@@ -363,51 +567,98 @@
     <div class="studio-wrap" id="studio">
       <section class="studio">
         <div class="section-heading"><div><p class="eyebrow">Rapid task showcase</p><h2>三类输入的代表任务</h2></div><p>快速演示版为每类 input 保留一个代表性预测任务。完整的组织来源识别与肿瘤定位分析请进入 RNABag Lab。</p></div>
-        <div class="stepbar" aria-hidden="true"><span class="active">01 · Input</span><span class="active">02 · Task</span><span>03 · Validate</span><span>04 · Result</span></div>
+        <nav class="workflow-nav" aria-label="分析步骤">
+          <div class="workflow-nav-inner">
+            <a class="workflow-link active" href="#step-input" data-step-target="step-input" aria-current="step"><span>01</span><strong>Input</strong></a>
+            <a class="workflow-link" href="#step-task" data-step-target="step-task"><span>02</span><strong>Task</strong></a>
+            <a class="workflow-link" href="#step-validate" data-step-target="step-validate"><span>03</span><strong>Validate</strong></a>
+            <a class="workflow-link" href="#step-result" data-step-target="step-result"><span>04</span><strong>Result</strong></a>
+          </div>
+        </nav>
+
         <div class="workspace" id="workspace">
-          <aside class="sidebar">
-            <p class="side-label">1. Choose input</p>
-            <div class="input-list" id="input-list"></div>
-            <div class="task-area"><p class="side-label">2. Available tasks</p><div class="task-list" id="task-list"></div></div>
-            <div class="scope-note"><strong>为什么先选 input？</strong>不同样本模态对应不同模型权重与任务范围。先限定输入，可避免选择模型不支持的组合。</div>
-          </aside>
-
-          <section class="main-panel" aria-live="polite">
-            <header class="task-header">
-              <div class="task-title-row"><div><p class="eyebrow" id="modality">Tissue RNA</p><h3 id="task-title">Cancer Detection</h3></div><code class="api-key" id="api-key">input: tissue</code></div>
-              <div class="task-summary-grid">
-                <div class="summary-column"><span class="summary-label">Biological objective</span><p id="task-description"></p></div>
-                <div class="summary-column"><span class="summary-label">Task specification</span><ul class="task-specs" id="task-specs" aria-label="Task specifications"></ul></div>
+          <section class="workflow-section" id="step-input" data-workflow-step aria-labelledby="step-input-title">
+            <div class="workflow-section-inner">
+              <header class="workflow-section-head">
+                <div><p class="workflow-kicker">01 · Input</p><h3 id="step-input-title">选择样本模态</h3></div>
+                <p>输入模态决定可用 checkpoint 与预测范围。先选择组织、血浆或血小板 RNA，再进入相应任务。</p>
+              </header>
+              <div class="input-stage">
+                <p class="side-label">Choose input</p>
+                <div class="input-list" id="input-list"></div>
+                <div class="scope-note"><strong>为什么先选 input？</strong>不同样本模态对应不同模型权重与任务范围。先限定输入，可避免选择模型不支持的组合。</div>
               </div>
-            </header>
-            <div class="panel-grid">
-              <div>
-                <h4 class="block-title"><span class="number">3</span>输入规则 · Input contract</h4>
-                <div class="input-contract">
-                  <p class="contract-lede">模型接受以基因为观测维度、样本为特征列的 bulk RNA expression matrix。提交前请确认以下数据约定。</p>
-                  <dl class="contract-list">
-                    <div class="contract-row"><dt>File encoding</dt><dd>UTF-8 编码的 tab-separated values（<code>.tsv</code>），不接受逗号分隔矩阵或 Excel 工作簿。</dd></div>
-                    <div class="contract-row"><dt>Quantification</dt><dd>表达丰度须完成 FPKM normalization；矩阵元素应为有限、非负的连续数值。</dd></div>
-                    <div class="contract-row"><dt>Matrix orientation</dt><dd>第一列为 <code>GeneID</code>，后续每列对应一个独立样本。RNABag 将执行基因映射、4096 HVG selection 与 log1p transformation。</dd></div>
-                    <div class="contract-row"><dt id="modality-rule">Sample modality</dt><dd id="modality-help">当前分析仅接受 tissue RNA；单一矩阵中不应混合不同生物样本模态。</dd></div>
-                  </dl>
-                </div>
-                <div class="schema" aria-label="TSV 格式示例"><div class="schema-row"><span>GeneID</span><span>Sample_001</span><span>Sample_002</span></div><div class="schema-row"><span>100287102</span><span>0.000</span><span>1.324</span></div><div class="schema-row"><span>653635</span><span>2.417</span><span>0.000</span></div></div>
+            </div>
+          </section>
 
-                <div class="upload">
-                  <h4 class="block-title"><span class="number">4</span>校验文件</h4>
-                  <label class="dropzone" id="dropzone"><input id="file-input" type="file" accept=".tsv,text/tab-separated-values,text/plain"><span class="drop-icon">↑</span><strong>拖入或选择 FPKM .tsv</strong><span>浏览器先预检；提交后由本地 API 完整校验</span></label>
-                  <div class="validation" id="validation"></div>
-                  <details class="sample-options"><summary>扩展选项 · Example dataset</summary><div class="sample-popover"><p id="sample-description">下载与当前任务样本模态一致的 100-sample FPKM matrix，用于检查数据结构与快速演示。</p><a class="sample-link" id="sample-link" download><span id="sample-filename">rnabag_demo_fpkm_tissue_100.tsv</span><strong>Download ↓</strong></a></div></details>
-                </div>
+          <section class="workflow-section" id="step-task" data-workflow-step aria-labelledby="step-task-title">
+            <div class="workflow-section-inner">
+              <header class="workflow-section-head">
+                <div><p class="workflow-kicker">02 · Task</p><h3 id="step-task-title">确定预测任务</h3></div>
+                <p>每个 prediction head 对应明确的 biological objective、label space 与输出形式；快速演示只保留代表任务。</p>
+              </header>
+              <div class="task-layout">
+                <aside class="task-picker">
+                  <div class="task-area"><p class="side-label">Available tasks</p><div class="task-list" id="task-list"></div></div>
+                </aside>
+                <article class="task-header" aria-live="polite">
+                  <div class="task-title-row"><div><p class="eyebrow" id="modality">Tissue RNA</p><h4 id="task-title">Cancer Detection</h4></div><code class="api-key" id="api-key">input: tissue</code></div>
+                  <div class="task-summary-grid">
+                    <div class="summary-column"><span class="summary-label">Biological objective</span><p id="task-description"></p></div>
+                    <div class="summary-column"><span class="summary-label">Task specification</span><ul class="task-specs" id="task-specs" aria-label="Task specifications"></ul></div>
+                  </div>
+                </article>
               </div>
+            </div>
+          </section>
 
-              <div class="result-card">
-                <div class="result-head"><div><small>Graphical output</small><strong id="result-title">Prediction preview</strong></div><span class="demo-badge" id="result-badge">RNABAG CHECKPOINT</span></div>
-                <div class="chart" id="chart"><div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div></div>
-                <div class="result-summary" id="result-summary"><small>Expected output</small><strong id="expected-output">Healthy / Cancer</strong></div>
-                <button class="button run" id="run-demo" type="button">提交本地分析</button>
-                <p class="disclaimer">当前结果由 RNABag checkpoint 在本地生成，仅限研究展示，不用于临床诊断。</p>
+          <section class="workflow-section" id="step-validate" data-workflow-step aria-labelledby="step-validate-title">
+            <div class="workflow-section-inner">
+              <header class="workflow-section-head">
+                <div><p class="workflow-kicker">03 · Validate</p><h3 id="step-validate-title">核验表达矩阵</h3></div>
+                <p>先确认 FPKM TSV 的编码、方向与样本模态，再由浏览器基础预检；提交后后端会执行完整 GeneID 与 4096 HVG 校验。</p>
+              </header>
+              <div class="validate-layout">
+                <article class="contract-surface">
+                  <h4 class="block-title"><span class="number">03</span>输入规则 · Input contract</h4>
+                  <div class="input-contract">
+                    <p class="contract-lede">模型接受以基因为观测维度、样本为特征列的 bulk RNA expression matrix。提交前请确认以下数据约定。</p>
+                    <dl class="contract-list">
+                      <div class="contract-row"><dt>File encoding</dt><dd>UTF-8 编码的 tab-separated values（<code>.tsv</code>），不接受逗号分隔矩阵或 Excel 工作簿。</dd></div>
+                      <div class="contract-row"><dt>Quantification</dt><dd>表达丰度须完成 FPKM normalization；矩阵元素应为有限、非负的连续数值。</dd></div>
+                      <div class="contract-row"><dt>Matrix orientation</dt><dd>第一列为 <code>GeneID</code>，后续每列对应一个独立样本。RNABag 将执行基因映射、4096 HVG selection 与 log1p transformation。</dd></div>
+                      <div class="contract-row"><dt id="modality-rule">Sample modality</dt><dd id="modality-help">当前分析仅接受 tissue RNA；单一矩阵中不应混合不同生物样本模态。</dd></div>
+                    </dl>
+                  </div>
+                  <div class="schema" aria-label="TSV 格式示例"><div class="schema-row"><span>GeneID</span><span>Sample_001</span><span>Sample_002</span></div><div class="schema-row"><span>100287102</span><span>0.000</span><span>1.324</span></div><div class="schema-row"><span>653635</span><span>2.417</span><span>0.000</span></div></div>
+                </article>
+
+                <article class="upload-surface">
+                  <div class="upload">
+                    <h4 class="block-title"><span class="number">↑</span>校验文件 · File check</h4>
+                    <label class="dropzone" id="dropzone"><input id="file-input" type="file" accept=".tsv,text/tab-separated-values,text/plain"><span class="drop-icon">↑</span><strong>拖入或选择 FPKM .tsv</strong><span>浏览器先预检；提交后由本地 API 完整校验</span></label>
+                    <div class="validation" id="validation" aria-live="polite"></div>
+                    <details class="sample-options"><summary>扩展选项 · Example dataset</summary><div class="sample-popover"><p id="sample-description">下载与当前任务样本模态一致的 100-sample FPKM matrix，用于检查数据结构与快速演示。</p><a class="sample-link" id="sample-link" download><span id="sample-filename">rnabag_demo_fpkm_tissue_100.tsv</span><strong>Download ↓</strong></a></div></details>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="workflow-section" id="step-result" data-workflow-step aria-labelledby="step-result-title">
+            <div class="workflow-section-inner">
+              <header class="workflow-section-head">
+                <div><p class="workflow-kicker">04 · Result</p><h3 id="step-result-title">运行并查看结果</h3></div>
+                <p>提交后可在这里查看队列、完整校验与 checkpoint 状态，以及第一个样本的任务特异概率输出。</p>
+              </header>
+              <div class="result-stage">
+                <div class="result-card">
+                  <div class="result-head"><div><small>Graphical output</small><strong id="result-title">Prediction preview</strong></div><span class="demo-badge" id="result-badge">RNABAG CHECKPOINT</span></div>
+                  <div class="chart" id="chart"><div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div></div>
+                  <div class="result-summary" id="result-summary"><small>Expected output</small><strong id="expected-output">Healthy / Cancer</strong></div>
+                  <button class="button run" id="run-demo" type="button">提交本地分析</button>
+                  <p class="disclaimer">当前结果由 RNABag checkpoint 在本地生成，仅限研究展示，不用于临床诊断。</p>
+                </div>
               </div>
             </div>
           </section>
@@ -477,6 +728,31 @@
     let selectedFile = null;
     let activeRun = 0;
     const $ = (selector) => document.querySelector(selector);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function stickyOffset() {
+      const siteNavHeight = isLab ? 0 : (document.querySelector(".nav")?.offsetHeight || 0);
+      return siteNavHeight + (document.querySelector(".workflow-nav")?.offsetHeight || 0) + 10;
+    }
+
+    function setActiveWorkflowStep(stepId) {
+      document.querySelectorAll("[data-step-target]").forEach(link => {
+        const active = link.dataset.stepTarget === stepId;
+        link.classList.toggle("active", active);
+        if (active) link.setAttribute("aria-current", "step");
+        else link.removeAttribute("aria-current");
+      });
+    }
+
+    function scrollToStep(stepId, historyMode = "replace") {
+      const target = document.getElementById(stepId);
+      if (!target) return;
+      if (historyMode === "push") history.pushState(null, "", `#${stepId}`);
+      else if (historyMode === "replace") history.replaceState(null, "", `#${stepId}`);
+      setActiveWorkflowStep(stepId);
+      const targetTop = window.scrollY + target.getBoundingClientRect().top - stickyOffset();
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: reducedMotion.matches ? "auto" : "smooth" });
+    }
 
     function escapeHtml(value) {
       return String(value).replace(/[&<>'"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;" })[character]);
@@ -518,8 +794,20 @@
       resetChart();
     }
 
-    function selectInput(key) { activeInput = key; activeTask = Object.keys(inputs[key].tasks)[0]; renderInputList(); renderTasks(); renderPanel(); }
-    function selectTask(key) { activeTask = key; renderTasks(); renderPanel(); }
+    function selectInput(key) {
+      activeInput = key;
+      activeTask = Object.keys(inputs[key].tasks)[0];
+      renderInputList();
+      renderTasks();
+      renderPanel();
+      scrollToStep("step-task");
+    }
+    function selectTask(key) {
+      activeTask = key;
+      renderTasks();
+      renderPanel();
+      scrollToStep("step-validate");
+    }
     function resetChart() { $("#result-title").textContent = "Prediction preview"; $("#result-badge").textContent = "RNABAG CHECKPOINT"; $("#chart").innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div>`; $("#result-summary").innerHTML = `<small>Expected output</small><strong id="expected-output">${inputs[activeInput].tasks[activeTask].expected}</strong>`; }
 
     function setRunState(running, label = "提交本地分析") {
@@ -580,6 +868,7 @@
         const box = $("#validation");
         box.className = "validation show warn";
         box.textContent = "请先选择一个通过基础预检的 .tsv 文件。";
+        scrollToStep("step-validate");
         return;
       }
 
@@ -609,7 +898,7 @@
         const box = $("#validation");
         box.className = "validation show warn";
         box.textContent = `分析未完成：${error.message}`;
-        showProgress("本地分析失败。请根据左侧提示检查文件或 API 状态。");
+        showProgress("本地分析失败。请返回 Validate 步骤检查文件或 API 状态。");
       } finally {
         if (run === activeRun) setRunState(false);
       }
@@ -637,6 +926,7 @@
       selectedFile = file;
       box.className = "validation show ok";
       box.textContent = `✓ 基础格式通过 · ${headers.length - 1} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - dataStart))} 个基因行 · 提交后将完整校验`;
+      scrollToStep("step-result");
       return true;
     }
 
@@ -673,17 +963,31 @@
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && overviewLightbox.classList.contains("is-open")) closeOverviewLightbox();
     });
-    document.querySelectorAll('a[href="#workspace"]').forEach(link => link.addEventListener("click", event => {
-      const workspace = document.querySelector(".workspace");
-      if (!workspace || isLab) return;
+    document.querySelectorAll('a[href^="#step-"]').forEach(link => link.addEventListener("click", event => {
+      const stepId = link.getAttribute("href").slice(1);
+      if (!document.getElementById(stepId)) return;
       event.preventDefault();
-      history.pushState(null, "", "#workspace");
-      const navHeight = document.querySelector(".nav")?.offsetHeight || 0;
-      const targetTop = window.scrollY + workspace.getBoundingClientRect().top - navHeight - 8;
-      window.scrollTo({ top: targetTop, behavior: "smooth" });
+      scrollToStep(stepId, "push");
     }));
 
     renderInputList(); renderTasks(); renderPanel();
+
+    let workflowScrollFrame = 0;
+    function updateWorkflowStepFromScroll() {
+      workflowScrollFrame = 0;
+      const probe = stickyOffset() + Math.min(window.innerHeight * .28, 220);
+      const sections = [...document.querySelectorAll("[data-workflow-step]")];
+      let activeSection = sections[0];
+      sections.forEach(section => {
+        if (section.getBoundingClientRect().top <= probe) activeSection = section;
+      });
+      if (activeSection) setActiveWorkflowStep(activeSection.id);
+    }
+    window.addEventListener("scroll", () => {
+      if (!workflowScrollFrame) workflowScrollFrame = requestAnimationFrame(updateWorkflowStepFromScroll);
+    }, { passive: true });
+    window.addEventListener("resize", updateWorkflowStepFromScroll);
+    updateWorkflowStepFromScroll();
   </script>
 </body>
 </html>
