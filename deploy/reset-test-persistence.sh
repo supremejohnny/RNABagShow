@@ -41,15 +41,18 @@ docker compose \
   down --remove-orphans
 
 docker run --rm \
+  --user 0:0 \
+  --entrypoint sh \
   -v "$RNABAG_POSTGRES_DATA_DIR:/wipe" \
   postgres:16-alpine \
-  sh -c 'find /wipe -mindepth 1 -delete'
+  -c 'rm -rf /wipe/* /wipe/.[!.]* /wipe/..?*'
 
 docker run --rm \
+  --user 0:0 \
   --entrypoint sh \
   -v "$RNABAG_OBJECT_DATA_DIR:/wipe" \
   minio/mc:latest \
-  -c 'find /wipe -mindepth 1 -delete'
+  -c 'rm -rf /wipe/* /wipe/.[!.]* /wipe/..?*'
 
 echo "RNABag test PostgreSQL and object-storage data were deleted."
 echo "The private config file was preserved."
