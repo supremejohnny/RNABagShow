@@ -1,7 +1,7 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
-  const isLab = params.get("mode") === "lab";
   const variant = document.body.dataset.variant || "two";
+  const isLab = params.get("mode") === "lab" || variant === "lab";
   document.body.classList.toggle("lab-mode", isLab);
 
   const backendOrigin = "http://127.0.0.1:8000";
@@ -115,6 +115,13 @@
     }, reducedMotion.matches ? 40 : 160);
   }
   function scrollToStep(step, mode = "replace") {
+    if (variant === "lab") {
+      if (mode === "push") history.pushState(null, "", `#${step}`);
+      else history.replaceState(null, "", `#${step}`);
+      programmaticStep = null;
+      setActiveStep(step, "programmatic");
+      return;
+    }
     const target = scrollNodeForStep(step);
     if (!target) return;
     if (mode === "replace") history.replaceState(null, "", `#${step}`);
@@ -307,6 +314,7 @@
     $$("[data-restart]").forEach(button => button.addEventListener("click", () => { state.activeInput = "tissue"; state.activeTask = "cancer"; state.runToken += 1; renderInputs(); renderTasks(); renderTaskDetail(); scrollToStep("step-input"); }));
   }
   function bindScrollState() {
+    if (variant === "lab") return;
     const observedSteps = scrollStepNodes();
     const observer = "IntersectionObserver" in window ? new IntersectionObserver(() => {
       if (programmaticStep) return;
@@ -354,7 +362,7 @@
   renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
   const initialStep = /^#step-(input|task|validate|result)$/.test(window.location.hash) ? window.location.hash.slice(1) : "step-input";
   setActiveStep(initialStep, "programmatic");
-  if (window.location.hash) {
+  if (window.location.hash && variant !== "lab") {
     const alignInitialStep = () => window.setTimeout(() => scrollToStep(initialStep), 0);
     if (document.readyState === "complete") alignInitialStep();
     else window.addEventListener("load", alignInitialStep, { once: true });
