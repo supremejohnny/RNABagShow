@@ -53,6 +53,12 @@ curl -X POST \
 Poll `/api/v1/analyses/{analysis_id}` until it succeeds, then read
 `/api/v1/analyses/{analysis_id}/result`.
 
+The frontend's one-click demo reads the two verified, versioned fixtures from
+`sampledata/` through `GET /api/v1/demo-data/tissue` or
+`GET /api/v1/demo-data/platelet`, then submits the selected bytes through the
+same analysis endpoint as a user upload. The demo source files are read-only
+application assets; they are not maintained as mutable MinIO objects.
+
 ## Configuration
 
 - `RNABAG_MAX_UPLOAD_BYTES`: upload limit; default 2 GiB.

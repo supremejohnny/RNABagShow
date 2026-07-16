@@ -41,6 +41,15 @@
     @media (max-width:759px){.nav-right{gap:12px;font-size:12px;}.nav-right .status,.nav-right a:last-child{display:none;}.model-overview{height:calc(100svh - 60px);padding:20px;}.overview-inner{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:14px;}.overview-copy h1{font-size:clamp(30px,9vw,42px);}.overview-body{margin-top:11px;}.overview-body p{font-size:11px;line-height:1.55;}.overview-points{display:none;}.overview-actions{margin-top:13px;}.overview-actions .button{padding:9px 13px;font-size:11px;}.overview-figure{display:grid;min-height:0;}.overview-figure img{width:100%;height:100%;max-height:none;object-fit:contain;}.overview-figure figcaption{display:none;}.overview-lightbox{padding:24px;}.overview-lightbox img{max-width:calc(100vw - 48px);max-height:calc(100vh - 48px);}.studio{padding:48px 16px 120px;}.section-heading{display:block;margin-bottom:20px;}.section-heading p:last-child{margin-top:12px;font-size:12px;}.workflow-nav{top:60px;margin:0 -8px;}.workflow-link{justify-content:center;gap:5px;padding:12px 5px 10px;}.workflow-link strong{font-size:9px;letter-spacing:.02em;}.scrolly-shell{display:block;}.story-column{display:none;}.analysis-stage{position:relative;top:auto;height:auto;max-height:none;min-height:0;overflow:visible;border:0;box-shadow:none;background:transparent;border-radius:0;}.analysis-stage::before{display:none;}.stage-panel,.stage-panel.active,.stage-panel.compact-visible{position:relative;inset:auto;display:block;opacity:1;transform:none;pointer-events:auto;visibility:visible;margin-bottom:36px;}.stage-panel[aria-hidden="true"]{visibility:visible;}.stage-panel-body{height:auto;overflow:visible;padding:0;}.stage-title{font-size:11px;}.input-stage,.task-stage,.validate-stage{box-shadow:var(--shadow);}.validate-stage{display:block;}.upload-box{margin-top:18px;padding:18px 0 0;border-top:1px solid var(--line);border-left:0;}.task-summary{grid-template-columns:1fr;}.result-card{min-height:500px;}.workflow-nav{position:sticky;}.stage-panel.inert{inert:false;}footer{display:block;}footer span{display:block;margin-top:6px;}}
     @media (max-height:700px) and (min-width:760px){.stage-panel-body{padding:18px;}.stage-title{margin-bottom:12px;}.stage-subtitle{margin-bottom:14px;}.input-stage,.task-stage{padding:16px;}.js-input-list{gap:8px;}.input-card{padding:10px;}.scope-note{margin-top:10px;padding:10px;}.task-choice{padding:9px 12px;margin-bottom:6px;}.task-detail{margin-top:10px;padding:16px;}.task-detail h4{font-size:30px;}.task-summary{gap:14px;margin-top:12px;padding-top:10px;}.task-specs{gap:1px;}.result-card{padding:18px;}}
     @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;}}
+    /* Keep the desktop Validation card stable while optional controls scroll internally. */
+    .validate-stage{height:332px;}
+    .upload-box{min-height:0;height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;contain:size;}
+    .dropzone .demo-hint{display:block;margin-top:8px;color:var(--blue-dark);font-size:9px;font-weight:700;}
+    .demo-action{margin-top:9px;padding-top:9px;border-top:1px solid var(--line);}
+    .demo-run{width:100%;padding:9px 12px;color:#fff;background:var(--blue);border:0;border-radius:999px;cursor:pointer;font-size:10px;font-weight:800;}
+    .demo-run:hover{background:var(--blue-dark);}
+    .demo-run:disabled{opacity:.58;cursor:wait;}
+    @media(max-width:759px){.validate-stage{height:auto;}.upload-box{height:auto;overflow:visible;scrollbar-gutter:auto;contain:none;}}
   </style>
 </head>
 <body data-variant="two">
@@ -64,6 +73,6 @@
   </main>
   <div class="overview-lightbox" role="dialog" aria-modal="true" aria-label="RNABag 模型总览放大图" aria-hidden="true"><img src="../asset/overview.png" alt="RNABag 数据准备、模型架构、下游任务与可解释性总览放大图"></div>
   <footer><strong>RNABag Studio · Pinned stage</strong><span>Research-use prototype · Not for clinical diagnosis</span></footer>
-  <script src="rnabag-variant.js?v=20260715d"></script>
+  <script src="rnabag-variant.js?v=20260716a"></script>
 </body>
 </html>

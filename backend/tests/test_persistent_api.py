@@ -114,6 +114,29 @@ def _fake_result(_path: Path, *, filename: str, task: str) -> dict[str, object]:
 
 
 class PersistentApiTests(unittest.TestCase):
+    def test_demo_data_downloads_are_limited_to_verified_modalities(self) -> None:
+        with (
+            patch.dict(os.environ, {"RNABAG_PERSISTENCE_ENABLED": "false"}),
+            TestClient(main.app) as client,
+        ):
+            expected = {
+                "tissue": ("tissue_sample_fpkm_to_joh.tsv", 12),
+                "platelet": ("Platelet_sample_to_joh.tsv", 3),
+            }
+            for modality, (filename, sample_count) in expected.items():
+                response = client.get(f"/api/v1/demo-data/{modality}")
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(
+                    response.headers["content-type"],
+                    "text/tab-separated-values; charset=utf-8",
+                )
+                self.assertIn(filename, response.headers["content-disposition"])
+                lines = response.content.splitlines()
+                header = lines[1].decode("utf-8").split("\t")
+                self.assertEqual(len(header) - 1, sample_count)
+
+            self.assertEqual(client.get("/api/v1/demo-data/plasma").status_code, 404)
+
     def test_persistent_upload_worker_result_and_purge(self) -> None:
         fake_backend = _FakePersistenceBackend()
         environment = {

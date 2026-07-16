@@ -34,6 +34,10 @@ from .persistence import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEMO_DATASETS = {
+    "tissue": PROJECT_ROOT / "sampledata" / "tissue_sample_fpkm_to_joh.tsv",
+    "platelet": PROJECT_ROOT / "sampledata" / "Platelet_sample_to_joh.tsv",
+}
 MAX_UPLOAD_BYTES = int(os.getenv("RNABAG_MAX_UPLOAD_BYTES", str(2 * 1024**3)))
 QUEUE_CAPACITY = int(os.getenv("RNABAG_QUEUE_CAPACITY", "10"))
 RESULT_TTL = timedelta(seconds=int(os.getenv("RNABAG_RESULT_TTL_SECONDS", "3600")))
@@ -331,6 +335,21 @@ async def health_ready(request: Request) -> dict[str, Any]:
 @app.get("/api/v1/tasks")
 async def list_tasks() -> dict[str, Any]:
     return {"mode": "checkpoint", "tasks": public_task_catalog()}
+
+
+@app.get("/api/v1/demo-data/{modality}")
+async def download_demo_data(modality: str) -> FileResponse:
+    path = DEMO_DATASETS.get(modality)
+    if path is None or not path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "NOT_FOUND", "message": "Demo dataset not found."},
+        )
+    return FileResponse(
+        path,
+        media_type="text/tab-separated-values",
+        filename=path.name,
+    )
 
 
 @app.post("/api/v1/analyses", status_code=status.HTTP_202_ACCEPTED)

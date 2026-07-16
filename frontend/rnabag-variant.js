@@ -14,9 +14,8 @@
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const sampleData = {
-    tissue: { path: "samples/rnabag_demo_fpkm_tissue_100.tsv", label: "tissue RNA" },
-    plasma: { path: "samples/rnabag_demo_fpkm_plasma_100.tsv", label: "plasma RNA" },
-    platelet: { path: "samples/rnabag_demo_fpkm_platelet_100.tsv", label: "platelet RNA" }
+    tissue: { path: apiUrl("/api/v1/demo-data/tissue"), filename: "tissue_sample_fpkm_to_joh.tsv", label: "tissue RNA", sampleCount: 12 },
+    platelet: { path: apiUrl("/api/v1/demo-data/platelet"), filename: "Platelet_sample_to_joh.tsv", label: "platelet RNA", sampleCount: 3 }
   };
   const inputs = {
     tissue: {
@@ -160,8 +159,9 @@
     $$(".js-modality-help").forEach(node => { node.textContent = `一个文件中请勿混入其他模态；该任务只接受 ${input.subtitle}。`; });
     $$(".js-expected-output").forEach(node => { node.textContent = task.expected; });
     const sample = sampleData[task.sampleKey];
-    $$(".js-sample-description").forEach(node => { node.textContent = `${task.title} 使用 ${sample.label} 的 100-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
-    $$(".js-sample-link").forEach(link => { link.href = sample.path; link.download = sample.path.split("/").pop(); });
+    $$(".js-sample-description").forEach(node => { node.textContent = `${task.title} 使用已验证的 ${sample.label} ${sample.sampleCount}-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
+    $$(".js-sample-link").forEach(link => { link.href = sample.path; link.download = sample.filename; });
+    $$(".js-demo-run").forEach(button => { button.setAttribute("aria-label", `Use Demo Data for ${task.title}`); });
     clearFile(false);
     resetResult();
     updateContext();
@@ -196,10 +196,15 @@
     $$(".js-chart").forEach(chart => { chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div>`; });
     $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Expected output</small><strong>${escapeHtml(currentTask().expected)}</strong>`; });
     $$(".js-run").forEach(button => { button.disabled = false; button.textContent = "提交本地分析"; });
+    $$(".js-demo-run").forEach(button => { button.disabled = false; button.textContent = "Use Demo Data"; });
     updateContext(); setStepStates();
   }
   function setRunState(running, label = "提交本地分析") {
     $$(".js-run").forEach(button => { button.disabled = running; button.textContent = label; });
+    $$(".js-demo-run").forEach(button => { button.disabled = running; });
+  }
+  function setDemoRunState(running, label = "Use Demo Data") {
+    $$(".js-demo-run").forEach(button => { button.disabled = running; button.textContent = label; });
   }
   function showProgress(message) {
     $$(".js-result-title").forEach(node => { node.textContent = "Local analysis"; });
@@ -266,7 +271,42 @@
       setStepStates(); updateContext();
     } finally { if (token === state.runToken) setRunState(false); }
   }
-  async function validateFile(file) {
+  async function runDemoAnalysis() {
+    const task = currentTask();
+    const sample = sampleData[task.sampleKey];
+    if (!sample) {
+      setValidation("当前任务暂未配置 Demo Data。", "warn");
+      return;
+    }
+    const loadToken = state.runToken;
+    state.status = "loading-demo";
+    setRunState(true, "正在载入示例数据…");
+    setDemoRunState(true, "Loading Demo…");
+    setValidation(`正在读取 ${sample.filename}…`);
+    showProgress("正在读取内置 Demo Data，随后将自动提交分析…");
+    scrollToStep("step-result");
+    try {
+      const response = await fetch(sample.path);
+      if (!response.ok) throw new Error(`Demo Data request failed (${response.status})`);
+      const blob = await response.blob();
+      if (loadToken !== state.runToken) return;
+      const file = new File([blob], sample.filename, { type: "text/tab-separated-values" });
+      const valid = await validateFile(file, { navigate: false });
+      if (!valid) throw new Error("内置 Demo Data 未通过基础预检。");
+      if (loadToken !== state.runToken) return;
+      await runAnalysis();
+    } catch (error) {
+      if (loadToken !== state.runToken) return;
+      state.status = "failed";
+      setValidation(`Demo Data 无法运行：${error.message}`, "warn");
+      showProgress("Demo Data 加载或分析失败，请检查本地 API 状态。");
+      setRunState(false);
+      setStepStates(); updateContext();
+    } finally {
+      setDemoRunState(false);
+    }
+  }
+  async function validateFile(file, { navigate = true } = {}) {
     if (!file) return false;
     state.selectedFile = null;
     if (!file.name.toLowerCase().endsWith(".tsv")) { setValidation("格式不匹配：请选择 .tsv 文件，而不是 CSV 或 Excel 文件。", "warn"); return false; }
@@ -286,7 +326,8 @@
     if (issues.length) { setValidation(`${file.name} · ${issues.join("；")}`, "warn"); return false; }
     state.selectedFile = file;
     setValidation(`✓ 基础格式通过 · ${headers.length - 1} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - dataStart))} 个基因行 · 提交后将完整校验`, "ok");
-    setStepStates(); updateContext(); scrollToStep("step-result");
+    setStepStates(); updateContext();
+    if (navigate) scrollToStep("step-result");
     return true;
   }
   function updateContext(extraStatus = "") {
@@ -304,6 +345,23 @@
       ["dragenter", "dragover"].forEach(name => dropzone.addEventListener(name, event => { event.preventDefault(); dropzone.classList.add("drag"); }));
       ["dragleave", "drop"].forEach(name => dropzone.addEventListener(name, event => { event.preventDefault(); dropzone.classList.remove("drag"); }));
       dropzone.addEventListener("drop", event => validateFile(event.dataTransfer.files[0]));
+    });
+  }
+  function ensureDemoControls() {
+    $$(".js-dropzone").forEach(dropzone => {
+      if ($(".demo-hint", dropzone)) return;
+      const hint = document.createElement("span");
+      hint.className = "demo-hint";
+      hint.textContent = "（没有文件？试试我们的 demo data↓）";
+      dropzone.append(hint);
+    });
+    $$(".sample-options").forEach(options => {
+      if (options.previousElementSibling?.classList.contains("demo-action")) return;
+      const section = document.createElement("section");
+      section.className = "demo-action";
+      section.setAttribute("aria-label", "Demo data");
+      section.innerHTML = '<button class="demo-run js-demo-run" type="button">Use Demo Data</button>';
+      options.before(section);
     });
   }
   function bindNavigation() {
@@ -357,8 +415,10 @@
     });
   }
 
+  ensureDemoControls();
   if (apiBaseUrl && $(".status")) $(".status").textContent = "Local API · 127.0.0.1:8000";
   $$(".js-run").forEach(button => button.addEventListener("click", runAnalysis));
+  $$(".js-demo-run").forEach(button => button.addEventListener("click", runDemoAnalysis));
   renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
   const initialStep = /^#step-(input|task|validate|result)$/.test(window.location.hash) ? window.location.hash.slice(1) : "step-input";
   setActiveStep(initialStep, "programmatic");
