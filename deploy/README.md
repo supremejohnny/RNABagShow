@@ -61,9 +61,11 @@ the ordered PostgreSQL migrations in a one-shot container. No host Python
 packages or files inside the Git checkout are created.
 
 The first application build downloads the CPU PyTorch wheel and can take a few
-minutes. Later starts reuse the image and are much faster. FastAPI serves both
-the canonical frontend and `/api/v1` on port 8000, so a second development
-frontend process is not used on the server.
+minutes. Later starts reuse the image and are much faster. `app-up.sh` always
+recreates the application container so that the Uvicorn process loads source
+updates from the read-only deployment checkout. FastAPI serves both the
+canonical frontend and `/api/v1` on port 8000, so a second development frontend
+process is not used on the server.
 
 Run the real PostgreSQL/MinIO round-trip and SHA-256 deduplication tests
 independently with:

@@ -45,7 +45,7 @@ export RNABAG_GID="$(id -g)"
 docker compose \
   --env-file "$CONFIG_FILE" \
   -f "$SCRIPT_DIR/compose.app-cpu.yml" \
-  up -d --build --wait
+  up -d --build --wait --force-recreate
 
 docker compose \
   --env-file "$CONFIG_FILE" \
