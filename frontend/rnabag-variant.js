@@ -5,17 +5,22 @@
   document.body.classList.toggle("lab-mode", isLab);
 
   const backendOrigin = "http://127.0.0.1:8000";
-  const isBackendOrigin = ["127.0.0.1", "localhost"].includes(window.location.hostname) && window.location.port === "8000";
-  const isAlternateLocalOrigin = window.location.protocol === "file:" || ["127.0.0.1", "localhost"].includes(window.location.hostname);
-  const apiBaseUrl = !isBackendOrigin && isAlternateLocalOrigin ? backendOrigin : "";
+  const localHostname = ["127.0.0.1", "localhost"].includes(window.location.hostname);
+  let apiBaseUrl = window.location.protocol === "file:" ? backendOrigin : "";
   const apiUrl = path => `${apiBaseUrl}${path}`;
+  const apiBaseReady = window.location.protocol !== "file:" && localHostname ? fetch("/api/v1/health/live", { cache: "no-store" })
+    .then(async response => {
+      const payload = await response.json().catch(() => ({}));
+      apiBaseUrl = response.ok && payload.status === "ok" && payload.mode === "checkpoint" ? "" : backendOrigin;
+    })
+    .catch(() => { apiBaseUrl = backendOrigin; }) : Promise.resolve();
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const sampleData = {
-    tissue: { path: apiUrl("/api/v1/demo-data/tissue"), filename: "tissue_sample_fpkm_to_joh.tsv", label: "tissue RNA", sampleCount: 12 },
-    platelet: { path: apiUrl("/api/v1/demo-data/platelet"), filename: "Platelet_sample_to_joh.tsv", label: "platelet RNA", sampleCount: 3 }
+    tissue: { apiPath: "/api/v1/demo-data/tissue", filename: "tissue_sample_fpkm_to_joh.tsv", label: "tissue RNA", sampleCount: 12 },
+    platelet: { apiPath: "/api/v1/demo-data/platelet", filename: "Platelet_sample_to_joh.tsv", label: "platelet RNA", sampleCount: 3 }
   };
   const inputs = {
     tissue: {
@@ -160,7 +165,7 @@
     $$(".js-expected-output").forEach(node => { node.textContent = task.expected; });
     const sample = sampleData[task.sampleKey];
     $$(".js-sample-description").forEach(node => { node.textContent = `${task.title} 使用已验证的 ${sample.label} ${sample.sampleCount}-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
-    $$(".js-sample-link").forEach(link => { link.href = sample.path; link.download = sample.filename; });
+    $$(".js-sample-link").forEach(link => { link.href = apiUrl(sample.apiPath); link.download = sample.filename; });
     $$(".js-demo-run").forEach(button => { button.setAttribute("aria-label", `Use Demo Data for ${task.title}`); });
     clearFile(false);
     resetResult();
@@ -252,6 +257,7 @@
     showProgress("正在将 TSV 发送给本地 RNABag API…");
     scrollToStep("step-result");
     try {
+      await apiBaseReady;
       const created = await readJson(await fetch(apiUrl(`/api/v1/analyses?task=${encodeURIComponent(task.apiTask)}`), { method: "POST", headers: { "Content-Type": "text/tab-separated-values", "X-RNABag-Filename": encodeURIComponent(state.selectedFile.name) }, body: state.selectedFile }));
       state.analysisId = created.analysis_id;
       while (token === state.runToken) {
@@ -286,7 +292,8 @@
     showProgress("正在读取内置 Demo Data，随后将自动提交分析…");
     scrollToStep("step-result");
     try {
-      const response = await fetch(sample.path);
+      await apiBaseReady;
+      const response = await fetch(apiUrl(sample.apiPath));
       if (!response.ok) throw new Error(`Demo Data request failed (${response.status})`);
       const blob = await response.blob();
       if (loadToken !== state.runToken) return;
@@ -416,7 +423,11 @@
   }
 
   ensureDemoControls();
-  if (apiBaseUrl && $(".status")) $(".status").textContent = "Local API · 127.0.0.1:8000";
+  apiBaseReady.then(() => {
+    const sample = sampleData[currentTask().sampleKey];
+    $$(".js-sample-link").forEach(link => { link.href = apiUrl(sample.apiPath); });
+    if (apiBaseUrl && $(".status")) $(".status").textContent = "Local API · 127.0.0.1:8000";
+  });
   $$(".js-run").forEach(button => button.addEventListener("click", runAnalysis));
   $$(".js-demo-run").forEach(button => button.addEventListener("click", runDemoAnalysis));
   renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
