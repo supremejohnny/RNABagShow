@@ -18,7 +18,11 @@ available. Public exposure, public TLS/domain routing, application
 authentication, and SSO remain separate deployment decisions. A restricted
 Nginx reverse-proxy gateway bound to `172.16.17.4:8080` and allowlisting
 the routed VPN client network `172.28.0.0/24` is approved for the current
-intranet test phase only.
+intranet test phase only. A temporary, fully public, HTTP-by-IP static preview
+on the `bastion` host is also approved. It must use the preview-only artifact
+from `deploy/public-preview/`: no API proxy, uploads, sample TSVs, backend,
+checkpoints, persistence, or inference may be deployed there. Public API
+exposure and a durable domain/TLS deployment remain unapproved separate phases.
 
 Never describe model output as a clinical diagnosis. Persistence is limited to
 the approved analysis metadata/result and private raw-upload object described
@@ -62,6 +66,8 @@ secrets, or environment files in the repository checkout.
 - `deploy/`: persistence, CPU application, and restricted intranet gateway
   Compose stacks, external-config bootstrap, server smoke checks, and guarded
   test-data reset commands.
+- `deploy/public-preview/` and `deploy/build-public-preview.sh`: allowlisted
+  static-only public preview artifact and API-disabled Nginx configuration.
 - `backend/app/inference.py`: TSV validation, GeneID mapping, ordered 4096-HVG
   matrix construction, checkpoint loading, and prediction formatting.
 - `backend/app/catalog.py`: API task names, modalities, and label order.

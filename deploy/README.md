@@ -114,6 +114,28 @@ loopback and PostgreSQL/MinIO keep running. The external Nginx config is
 preserved for the next start. Public exposure still requires a separate TLS,
 authentication, rate-limit, and network review.
 
+## Temporary public-IP static preview
+
+The approved bastion preview is static-only and deliberately has no connection
+to FastAPI or the main inference server. Build its allowlisted files into a new
+empty temporary directory:
+
+```bash
+preview_root="$(mktemp -d)"
+./deploy/build-public-preview.sh "$preview_root/site"
+```
+
+Deploy only the generated `site/` contents to `/var/www/rnabag` on the bastion
+host and install `deploy/public-preview/nginx-rnabag-preview.conf` as an
+independent Nginx site. The preview runtime disables upload, demo-data, and run
+controls. Nginx additionally blocks browser connections with
+`connect-src 'none'` and returns `503 API_NOT_ENABLED` for `/api/v1/`.
+
+Do not copy `backend/`, `RNABag/`, `mapping/`, `sampledata/`, credentials, or
+mutable server data to the bastion. This temporary HTTP-by-IP preview is not a
+substitute for the separate domain, TLS, authentication, abuse-control, and
+public-API review.
+
 ## Viewing the server page
 
 Keep the HTTP service on loopback until authentication, TLS, rate limiting, and

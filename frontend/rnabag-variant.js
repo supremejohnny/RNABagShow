@@ -1,14 +1,17 @@
 (() => {
+  const runtimeConfig = window.RNABAG_RUNTIME_CONFIG || {};
+  const publicPreview = runtimeConfig.mode === "public-preview";
   const params = new URLSearchParams(window.location.search);
   const variant = document.body.dataset.variant || "two";
   const isLab = params.get("mode") === "lab" || variant === "lab";
   document.body.classList.toggle("lab-mode", isLab);
+  document.body.classList.toggle("public-preview", publicPreview);
 
   const backendOrigin = "http://127.0.0.1:8000";
   const localHostname = ["127.0.0.1", "localhost"].includes(window.location.hostname);
-  let apiBaseUrl = window.location.protocol === "file:" ? backendOrigin : "";
+  let apiBaseUrl = publicPreview ? "" : window.location.protocol === "file:" ? backendOrigin : "";
   const apiUrl = path => `${apiBaseUrl}${path}`;
-  const apiBaseReady = window.location.protocol !== "file:" && localHostname ? fetch("/api/v1/health/live", { cache: "no-store" })
+  const apiBaseReady = publicPreview ? Promise.resolve() : window.location.protocol !== "file:" && localHostname ? fetch("/api/v1/health/live", { cache: "no-store" })
     .then(async response => {
       const payload = await response.json().catch(() => ({}));
       apiBaseUrl = response.ok && payload.status === "ok" && payload.mode === "checkpoint" ? "" : backendOrigin;
@@ -164,8 +167,20 @@
     $$(".js-modality-help").forEach(node => { node.textContent = `一个文件中请勿混入其他模态；该任务只接受 ${input.subtitle}。`; });
     $$(".js-expected-output").forEach(node => { node.textContent = task.expected; });
     const sample = sampleData[task.sampleKey];
-    $$(".js-sample-description").forEach(node => { node.textContent = `${task.title} 使用已验证的 ${sample.label} ${sample.sampleCount}-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
-    $$(".js-sample-link").forEach(link => { link.href = apiUrl(sample.apiPath); link.download = sample.filename; });
+    $$(".js-sample-description").forEach(node => { node.textContent = publicPreview ? "公网预览阶段不提供示例数据下载或推理。" : `${task.title} 使用已验证的 ${sample.label} ${sample.sampleCount}-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
+    $$(".js-sample-link").forEach(link => {
+      if (publicPreview) {
+        link.removeAttribute("href");
+        link.removeAttribute("download");
+        link.setAttribute("aria-disabled", "true");
+        const label = $("span", link);
+        if (label) label.textContent = "Example dataset 暂未开放";
+      } else {
+        link.href = apiUrl(sample.apiPath);
+        link.download = sample.filename;
+        link.removeAttribute("aria-disabled");
+      }
+    });
     $$(".js-demo-run").forEach(button => { button.setAttribute("aria-label", `Use Demo Data for ${task.title}`); });
     clearFile(false);
     resetResult();
@@ -196,17 +211,17 @@
   }
   function resetResult() {
     state.status = "ready";
-    $$(".js-result-title").forEach(node => { node.textContent = "Prediction preview"; });
-    $$(".js-result-badge").forEach(node => { node.textContent = "RNABAG CHECKPOINT"; });
-    $$(".js-chart").forEach(chart => { chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div>`; });
+    $$(".js-result-title").forEach(node => { node.textContent = publicPreview ? "Public preview" : "Prediction preview"; });
+    $$(".js-result-badge").forEach(node => { node.textContent = publicPreview ? "INFERENCE OFFLINE" : "RNABAG CHECKPOINT"; });
+    $$(".js-chart").forEach(chart => { chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`; });
     $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Expected output</small><strong>${escapeHtml(currentTask().expected)}</strong>`; });
-    $$(".js-run").forEach(button => { button.disabled = false; button.textContent = "提交本地分析"; });
-    $$(".js-demo-run").forEach(button => { button.disabled = false; button.textContent = "Use Demo Data"; });
+    $$(".js-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "推理服务暂未开放" : "提交本地分析"; });
+    $$(".js-demo-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "Demo 暂未开放" : "Use Demo Data"; });
     updateContext(); setStepStates();
   }
   function setRunState(running, label = "提交本地分析") {
-    $$(".js-run").forEach(button => { button.disabled = running; button.textContent = label; });
-    $$(".js-demo-run").forEach(button => { button.disabled = running; });
+    $$(".js-run").forEach(button => { button.disabled = publicPreview || running; button.textContent = publicPreview ? "推理服务暂未开放" : label; });
+    $$(".js-demo-run").forEach(button => { button.disabled = publicPreview || running; });
   }
   function setDemoRunState(running, label = "Use Demo Data") {
     $$(".js-demo-run").forEach(button => { button.disabled = running; button.textContent = label; });
@@ -249,6 +264,7 @@
     updateContext(); setStepStates();
   }
   async function runAnalysis() {
+    if (publicPreview) return;
     if (!state.selectedFile) { setValidation("请先选择一个通过基础预检的 .tsv 文件。", "warn"); scrollToStep("step-validate"); return; }
     const task = currentTask();
     const token = ++state.runToken;
@@ -278,6 +294,7 @@
     } finally { if (token === state.runToken) setRunState(false); }
   }
   async function runDemoAnalysis() {
+    if (publicPreview) return;
     const task = currentTask();
     const sample = sampleData[task.sampleKey];
     if (!sample) {
@@ -314,6 +331,7 @@
     }
   }
   async function validateFile(file, { navigate = true } = {}) {
+    if (publicPreview) return false;
     if (!file) return false;
     state.selectedFile = null;
     if (!file.name.toLowerCase().endsWith(".tsv")) { setValidation("格式不匹配：请选择 .tsv 文件，而不是 CSV 或 Excel 文件。", "warn"); return false; }
@@ -341,12 +359,20 @@
     const task = currentTask();
     $$(".js-context-input").forEach(node => { node.textContent = inputs[state.activeInput].label; });
     $$(".js-context-task").forEach(node => { node.textContent = task.title; });
-    $$(".js-context-file").forEach(node => { node.textContent = state.selectedFile?.name || "Not selected"; });
-    $$(".js-context-analysis").forEach(node => { node.textContent = state.analysisId || "Not created"; });
-    $$(".js-context-status").forEach(node => { node.textContent = extraStatus || (state.status === "ready" ? "Ready for input" : state.status); });
+    $$(".js-context-file").forEach(node => { node.textContent = publicPreview ? "Uploads disabled" : state.selectedFile?.name || "Not selected"; });
+    $$(".js-context-analysis").forEach(node => { node.textContent = publicPreview ? "Not available" : state.analysisId || "Not created"; });
+    $$(".js-context-status").forEach(node => { node.textContent = publicPreview ? "Public preview" : extraStatus || (state.status === "ready" ? "Ready for input" : state.status); });
     $$(".js-context-output").forEach(node => { node.textContent = task.expected; });
   }
   function bindFileControls() {
+    if (publicPreview) {
+      $$(".js-file-input").forEach(input => { input.disabled = true; });
+      $$(".js-dropzone").forEach(dropzone => {
+        dropzone.setAttribute("aria-disabled", "true");
+        ["click", "dragenter", "dragover", "dragleave", "drop"].forEach(name => dropzone.addEventListener(name, event => event.preventDefault()));
+      });
+      return;
+    }
     $$(".js-file-input").forEach(input => input.addEventListener("change", event => validateFile(event.target.files[0])));
     $$(".js-dropzone").forEach(dropzone => {
       ["dragenter", "dragover"].forEach(name => dropzone.addEventListener(name, event => { event.preventDefault(); dropzone.classList.add("drag"); }));
@@ -359,7 +385,7 @@
       if ($(".demo-hint", dropzone)) return;
       const hint = document.createElement("span");
       hint.className = "demo-hint";
-      hint.textContent = "（没有文件？试试我们的 demo data↓）";
+      hint.textContent = publicPreview ? "（公网预览不接收文件）" : "（没有文件？试试我们的 demo data↓）";
       dropzone.append(hint);
     });
     $$(".sample-options").forEach(options => {
@@ -422,15 +448,41 @@
     });
   }
 
+  function applyPublicPreview() {
+    if (!publicPreview) return;
+    const style = document.createElement("style");
+    style.textContent = ".public-preview-banner{padding:10px 20px;color:#503b08;background:#fff3c4;border-bottom:1px solid #ead58a;text-align:center;font-size:13px;font-weight:700}.public-preview .status::before{background:#d69b13;box-shadow:0 0 0 4px rgba(214,155,19,.14)}.public-preview .js-dropzone{opacity:.62;cursor:not-allowed}.public-preview .js-dropzone:hover{background:#fbfcfe;border-color:#aeb9c9}.public-preview .js-sample-link[aria-disabled=true]{opacity:.58;cursor:not-allowed}.public-preview .js-run:disabled,.public-preview .js-demo-run:disabled{cursor:not-allowed}";
+    document.head.append(style);
+    const banner = document.createElement("div");
+    banner.className = "public-preview-banner";
+    banner.setAttribute("role", "status");
+    banner.textContent = "公网预览 · 当前仅展示页面与任务设计，不接收文件，不运行推理。";
+    const anchor = isLab ? $(".lab-bar") : $(".nav");
+    if (anchor) anchor.insertAdjacentElement("afterend", banner);
+    else document.body.prepend(banner);
+    $$(".status").forEach(node => { node.textContent = "Public preview"; });
+    $$(".disclaimer").forEach(node => { node.textContent = "公网预览不接收或保存任何样本数据；页面内容仅限研究展示，不用于临床诊断。"; });
+    $$(".js-dropzone").forEach(dropzone => {
+      const title = $("strong", dropzone);
+      if (title) title.textContent = "文件上传暂未开放";
+    });
+    $$(".stage-subtitle").forEach(node => {
+      node.textContent = node.textContent.replace("本地 API", "后续推理服务").replace("提交后", "服务开放后");
+    });
+  }
+
   ensureDemoControls();
-  apiBaseReady.then(() => {
+  if (!publicPreview) apiBaseReady.then(() => {
     const sample = sampleData[currentTask().sampleKey];
     $$(".js-sample-link").forEach(link => { link.href = apiUrl(sample.apiPath); });
     if (apiBaseUrl && $(".status")) $(".status").textContent = "Local API · 127.0.0.1:8000";
   });
-  $$(".js-run").forEach(button => button.addEventListener("click", runAnalysis));
-  $$(".js-demo-run").forEach(button => button.addEventListener("click", runDemoAnalysis));
+  if (!publicPreview) {
+    $$(".js-run").forEach(button => button.addEventListener("click", runAnalysis));
+    $$(".js-demo-run").forEach(button => button.addEventListener("click", runDemoAnalysis));
+  }
   renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
+  applyPublicPreview();
   const initialStep = /^#step-(input|task|validate|result)$/.test(window.location.hash) ? window.location.hash.slice(1) : "step-input";
   setActiveStep(initialStep, "programmatic");
   if (window.location.hash && variant !== "lab") {
