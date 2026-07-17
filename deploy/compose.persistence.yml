@@ -42,8 +42,6 @@ services:
       minio:
         condition: service_healthy
     restart: "no"
-    volumes:
-      - "./minio-rnabag-policy.json:/policy/rnabag-app.json:ro"
     entrypoint:
       - /bin/sh
       - -c
@@ -55,8 +53,34 @@ services:
             exit 1
             ;;
         esac
-        sed "s/__RNABAG_S3_BUCKET__/$$RNABAG_S3_BUCKET/g" \
-          /policy/rnabag-app.json > /tmp/rnabag-app.json
+        cat > /tmp/rnabag-app.json <<EOF
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListBucket"
+              ],
+              "Resource": [
+                "arn:aws:s3:::$$RNABAG_S3_BUCKET"
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:DeleteObject",
+                "s3:GetObject",
+                "s3:PutObject"
+              ],
+              "Resource": [
+                "arn:aws:s3:::$$RNABAG_S3_BUCKET/*"
+              ]
+            }
+          ]
+        }
+        EOF
         mc alias set rnabag http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
         mc mb --ignore-existing rnabag/"$$RNABAG_S3_BUCKET"
         mc anonymous set none rnabag/"$$RNABAG_S3_BUCKET"

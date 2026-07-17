@@ -227,19 +227,15 @@ class PersistenceContractTests(unittest.TestCase):
         self.assertLess(retry_events.index("commit"), retry_events.index("delete"))
 
     def test_minio_policy_is_rendered_for_the_configured_bucket(self) -> None:
-        policy = (PROJECT_ROOT / "deploy" / "minio-rnabag-policy.json").read_text(
-            encoding="utf-8"
-        )
         compose = (PROJECT_ROOT / "deploy" / "compose.persistence.yml").read_text(
             encoding="utf-8"
         )
 
-        self.assertIn("__RNABAG_S3_BUCKET__", policy)
-        self.assertNotIn("arn:aws:s3:::rnabag-private-inputs", policy)
-        self.assertIn(
-            'sed "s/__RNABAG_S3_BUCKET__/$$RNABAG_S3_BUCKET/g"',
-            compose,
-        )
+        self.assertIn("cat > /tmp/rnabag-app.json <<EOF", compose)
+        self.assertIn('"arn:aws:s3:::$$RNABAG_S3_BUCKET"', compose)
+        self.assertIn('"arn:aws:s3:::$$RNABAG_S3_BUCKET/*"', compose)
+        self.assertNotIn("sed ", compose)
+        self.assertNotIn("arn:aws:s3:::rnabag-private-inputs", compose)
         self.assertNotIn(
             "mc admin policy create rnabag rnabag-app /tmp/rnabag-app.json || true",
             compose,
