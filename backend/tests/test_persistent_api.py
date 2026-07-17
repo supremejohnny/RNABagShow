@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 import unittest
@@ -7,6 +8,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -114,6 +116,35 @@ def _fake_result(_path: Path, *, filename: str, task: str) -> dict[str, object]:
 
 
 class PersistentApiTests(unittest.TestCase):
+    def test_queue_reservations_close_the_concurrent_upload_window(self) -> None:
+        queue_app = SimpleNamespace(
+            state=SimpleNamespace(queue=asyncio.Queue(), queue_reservations=0)
+        )
+        with patch.object(main, "QUEUE_CAPACITY", 1):
+            self.assertTrue(main.try_reserve_queue_slot(queue_app))
+            self.assertFalse(main.try_reserve_queue_slot(queue_app))
+            main.release_queue_slot(queue_app)
+
+            queue_app.state.queue.put_nowait("already-waiting")
+            self.assertFalse(main.try_reserve_queue_slot(queue_app))
+
+    def test_filename_must_fit_the_persistence_schema(self) -> None:
+        with (
+            patch.dict(os.environ, {"RNABAG_PERSISTENCE_ENABLED": "false"}),
+            TestClient(main.app) as client,
+        ):
+            response = client.post(
+                "/api/v1/analyses?task=platelet_cancer_detection",
+                content=b"GeneID\tSample\n1\t1\n",
+                headers={
+                    "Content-Type": "text/tab-separated-values",
+                    "X-RNABag-Filename": f"{'a' * 509}.tsv",
+                },
+            )
+
+        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(response.json()["detail"]["code"], "INVALID_FILENAME")
+
     def test_demo_data_downloads_are_limited_to_verified_modalities(self) -> None:
         with (
             patch.dict(os.environ, {"RNABAG_PERSISTENCE_ENABLED": "false"}),

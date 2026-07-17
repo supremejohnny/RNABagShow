@@ -8,7 +8,7 @@
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::rnabag-private-inputs"
+        "arn:aws:s3:::__RNABAG_S3_BUCKET__"
       ]
     },
     {
@@ -19,7 +19,7 @@
         "s3:PutObject"
       ],
       "Resource": [
-        "arn:aws:s3:::rnabag-private-inputs/*"
+        "arn:aws:s3:::__RNABAG_S3_BUCKET__/*"
       ]
     }
   ]

@@ -47,12 +47,21 @@ services:
     entrypoint:
       - /bin/sh
       - -c
-      - >-
-        mc alias set rnabag http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
-        mc mb --ignore-existing rnabag/"$$RNABAG_S3_BUCKET" &&
-        mc anonymous set none rnabag/"$$RNABAG_S3_BUCKET" &&
-        mc admin policy create rnabag rnabag-app /policy/rnabag-app.json || true &&
-        mc admin user add rnabag "$$RNABAG_S3_ACCESS_KEY" "$$RNABAG_S3_SECRET_KEY" || true &&
+      - |
+        set -eu
+        case "$$RNABAG_S3_BUCKET" in
+          ""|*[!a-z0-9.-]*)
+            echo "RNABAG_S3_BUCKET contains invalid characters." >&2
+            exit 1
+            ;;
+        esac
+        sed "s/__RNABAG_S3_BUCKET__/$$RNABAG_S3_BUCKET/g" \
+          /policy/rnabag-app.json > /tmp/rnabag-app.json
+        mc alias set rnabag http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing rnabag/"$$RNABAG_S3_BUCKET"
+        mc anonymous set none rnabag/"$$RNABAG_S3_BUCKET"
+        mc admin policy create rnabag rnabag-app /tmp/rnabag-app.json
+        mc admin user add rnabag "$$RNABAG_S3_ACCESS_KEY" "$$RNABAG_S3_SECRET_KEY" || true
         mc admin policy attach rnabag rnabag-app --user "$$RNABAG_S3_ACCESS_KEY"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}

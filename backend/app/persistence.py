@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import uuid
 from dataclasses import dataclass
@@ -147,12 +148,12 @@ class S3ObjectStore:
                 MetadataDirective="COPY",
             )
         except Exception as exc:
-            with _ignore_object_error():
+            with contextlib.suppress(Exception):
                 self._client.delete_object(Bucket=self.bucket, Key=final_key)
             raise PersistenceOperationError("Original upload could not be stored.") from exc
         finally:
             if uploaded_staging:
-                with _ignore_object_error():
+                with contextlib.suppress(Exception):
                     self._client.delete_object(Bucket=self.bucket, Key=staging_key)
         return final_key
 
@@ -168,14 +169,6 @@ class S3ObjectStore:
             self._client.delete_object(Bucket=self.bucket, Key=storage_key)
         except Exception as exc:
             raise PersistenceOperationError("Stored original upload could not be deleted.") from exc
-
-
-class _ignore_object_error:
-    def __enter__(self) -> None:
-        return None
-
-    def __exit__(self, *_args: object) -> bool:
-        return True
 
 
 class PersistenceBackend:
@@ -346,7 +339,7 @@ class PersistenceBackend:
         except Exception:
             connection.rollback()
             if created_storage_key is not None:
-                with _ignore_object_error():
+                with contextlib.suppress(Exception):
                     self.objects.delete_original(created_storage_key)
             raise
         finally:
@@ -452,6 +445,7 @@ class PersistenceBackend:
     def purge_analysis(self, analysis_id: str) -> bool:
         analysis_uuid = uuid.UUID(analysis_id)
         connection = self._connect()
+        storage_key_to_delete: str | None = None
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -462,30 +456,28 @@ class PersistenceBackend:
                 if row is None:
                     connection.rollback()
                     return False
-                if row["purged_at"] is not None:
-                    connection.commit()
-                    return True
 
                 cursor.execute(
                     "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
                     (row["file_sha256"],),
                 )
-                cursor.execute(
-                    """
-                    UPDATE analyses
-                    SET status = 'purged',
-                        original_filename = 'purged.tsv',
-                        file_size_bytes = 0,
-                        input_summary = NULL,
-                        result = NULL,
-                        error = NULL,
-                        purged_at = NOW(),
-                        completed_at = COALESCE(completed_at, NOW()),
-                        updated_at = NOW()
-                    WHERE id = %s
-                    """,
-                    (analysis_uuid,),
-                )
+                if row["purged_at"] is None:
+                    cursor.execute(
+                        """
+                        UPDATE analyses
+                        SET status = 'purged',
+                            original_filename = 'purged.tsv',
+                            file_size_bytes = 0,
+                            input_summary = NULL,
+                            result = NULL,
+                            error = NULL,
+                            purged_at = NOW(),
+                            completed_at = COALESCE(completed_at, NOW()),
+                            updated_at = NOW()
+                        WHERE id = %s
+                        """,
+                        (analysis_uuid,),
+                    )
                 cursor.execute(
                     """
                     SELECT COUNT(*) AS reference_count
@@ -499,11 +491,14 @@ class PersistenceBackend:
                 )
                 reference_count = cursor.fetchone()["reference_count"]
                 if reference_count == 0:
-                    self.objects.delete_original(row["storage_key"])
+                    storage_key_to_delete = row["storage_key"]
             connection.commit()
-            return True
         except Exception:
             connection.rollback()
             raise
         finally:
             connection.close()
+
+        if storage_key_to_delete is not None:
+            self.objects.delete_original(storage_key_to_delete)
+        return True

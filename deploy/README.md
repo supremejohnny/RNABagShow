@@ -162,7 +162,8 @@ This leaves a minimal `purged` tombstone row and deletes the original object
 only after its last active reference is purged.
 
 To remove the entire test PostgreSQL cluster and every MinIO object, stop the
-backend first, then run the guarded reset:
+backend first, then run the guarded reset. The script verifies that the FastAPI
+container is stopped and refuses to wipe storage while it is running:
 
 ```bash
 RNABAG_CONFIRM_RESET=delete-rnabag-test-database-and-objects \

@@ -85,8 +85,16 @@ def prune_expired_memory_jobs(app: FastAPI) -> None:
         app.state.jobs.pop(job_id, None)
 
 
-def queue_is_full(app: FastAPI) -> bool:
-    return app.state.queue.qsize() >= QUEUE_CAPACITY
+def try_reserve_queue_slot(app: FastAPI) -> bool:
+    pending_count = app.state.queue.qsize() + app.state.queue_reservations
+    if pending_count >= QUEUE_CAPACITY:
+        return False
+    app.state.queue_reservations += 1
+    return True
+
+
+def release_queue_slot(app: FastAPI) -> None:
+    app.state.queue_reservations -= 1
 
 
 def safe_filename(raw_filename: str) -> str:
@@ -256,6 +264,7 @@ async def lifespan(app: FastAPI):
     app.state.owns_temp_dir = owns_temp_dir
     app.state.jobs = {}
     app.state.queue = asyncio.Queue()
+    app.state.queue_reservations = 0
     app.state.persistence = None
 
     if persistence_enabled():
@@ -373,12 +382,6 @@ async def create_analysis(
                 "message": definition.get("unavailable_reason", "Task is unavailable."),
             },
         )
-    if queue_is_full(request.app):
-        raise HTTPException(
-            status_code=429,
-            detail={"code": "QUEUE_FULL", "message": "The inference queue is full."},
-        )
-
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -387,6 +390,14 @@ async def create_analysis(
         )
 
     filename = safe_filename(unquote(request.headers.get("x-rnabag-filename", "upload.tsv")))
+    if not filename or len(filename) > 512:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_FILENAME",
+                "message": "Filename must contain between 1 and 512 characters.",
+            },
+        )
     if not filename.lower().endswith(".tsv"):
         raise HTTPException(
             status_code=400,
@@ -413,82 +424,91 @@ async def create_analysis(
                 detail={"code": "FILE_TOO_LARGE", "message": "Upload exceeds the configured size limit."},
             )
 
-    analysis_id = str(uuid.uuid4())
-    upload_path = request.app.state.temp_dir / f"{analysis_id}-upload.tsv"
-    digest = hashlib.sha256()
-    size_bytes = 0
-    try:
-        with upload_path.open("wb") as handle:
-            async for chunk in request.stream():
-                if not chunk:
-                    continue
-                size_bytes += len(chunk)
-                if size_bytes > MAX_UPLOAD_BYTES:
-                    raise HTTPException(
-                        status_code=413,
-                        detail={
-                            "code": "FILE_TOO_LARGE",
-                            "message": "Upload exceeds the configured size limit.",
-                        },
-                    )
-                digest.update(chunk)
-                handle.write(chunk)
-    except Exception:
-        upload_path.unlink(missing_ok=True)
-        raise
-
-    if size_bytes == 0:
-        upload_path.unlink(missing_ok=True)
+    if not try_reserve_queue_slot(request.app):
         raise HTTPException(
-            status_code=400,
-            detail={"code": "EMPTY_FILE", "message": "Uploaded file is empty."},
+            status_code=429,
+            detail={"code": "QUEUE_FULL", "message": "The inference queue is full."},
         )
 
-    persistence = request.app.state.persistence
-    if persistence is not None:
+    try:
+        analysis_id = str(uuid.uuid4())
+        upload_path = request.app.state.temp_dir / f"{analysis_id}-upload.tsv"
+        digest = hashlib.sha256()
+        size_bytes = 0
         try:
-            job = await asyncio.to_thread(
-                persistence.create_analysis,
-                upload_path,
-                analysis_id=analysis_id,
-                task=task,
-                modality=definition["modality"],
-                original_filename=filename,
-                file_size_bytes=size_bytes,
-                file_sha256=digest.hexdigest(),
-                content_type=content_type,
-            )
-        except Exception as exc:
-            LOGGER.exception("Persistent analysis creation failed for %s", analysis_id)
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "code": "PERSISTENCE_UNAVAILABLE",
-                    "message": "The analysis could not be stored.",
-                },
-            ) from exc
-        finally:
+            with upload_path.open("wb") as handle:
+                async for chunk in request.stream():
+                    if not chunk:
+                        continue
+                    size_bytes += len(chunk)
+                    if size_bytes > MAX_UPLOAD_BYTES:
+                        raise HTTPException(
+                            status_code=413,
+                            detail={
+                                "code": "FILE_TOO_LARGE",
+                                "message": "Upload exceeds the configured size limit.",
+                            },
+                        )
+                    digest.update(chunk)
+                    handle.write(chunk)
+        except BaseException:
             upload_path.unlink(missing_ok=True)
-        request.app.state.queue.put_nowait(analysis_id)
-        return job
+            raise
 
-    created_at = iso_now()
-    job = {
-        "analysis_id": analysis_id,
-        "status": "queued",
-        "task": task,
-        "modality": definition["modality"],
-        "filename": filename,
-        "size_bytes": size_bytes,
-        "file_digest": digest.hexdigest(),
-        "created_at": created_at,
-        "updated_at": created_at,
-        "path": str(upload_path),
-        "mode": "checkpoint",
-    }
-    request.app.state.jobs[analysis_id] = job
-    request.app.state.queue.put_nowait(analysis_id)
-    return public_memory_job(job)
+        if size_bytes == 0:
+            upload_path.unlink(missing_ok=True)
+            raise HTTPException(
+                status_code=400,
+                detail={"code": "EMPTY_FILE", "message": "Uploaded file is empty."},
+            )
+
+        persistence = request.app.state.persistence
+        if persistence is not None:
+            try:
+                job = await asyncio.to_thread(
+                    persistence.create_analysis,
+                    upload_path,
+                    analysis_id=analysis_id,
+                    task=task,
+                    modality=definition["modality"],
+                    original_filename=filename,
+                    file_size_bytes=size_bytes,
+                    file_sha256=digest.hexdigest(),
+                    content_type=content_type,
+                )
+            except Exception as exc:
+                LOGGER.exception("Persistent analysis creation failed for %s", analysis_id)
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "code": "PERSISTENCE_UNAVAILABLE",
+                        "message": "The analysis could not be stored.",
+                    },
+                ) from exc
+            finally:
+                upload_path.unlink(missing_ok=True)
+            request.app.state.queue.put_nowait(analysis_id)
+            return job
+
+        created_at = iso_now()
+        job = {
+            "analysis_id": analysis_id,
+            "status": "queued",
+            "task": task,
+            "modality": definition["modality"],
+            "filename": filename,
+            "size_bytes": size_bytes,
+            "file_digest": digest.hexdigest(),
+            "created_at": created_at,
+            "updated_at": created_at,
+            "path": str(upload_path),
+            "mode": "checkpoint",
+        }
+        request.app.state.jobs[analysis_id] = job
+        request.app.state.queue.put_nowait(analysis_id)
+        return public_memory_job(job)
+    finally:
+        release_queue_slot(request.app)
 
 
 @app.get("/api/v1/analyses/{analysis_id}")

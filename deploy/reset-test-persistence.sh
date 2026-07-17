@@ -34,6 +34,24 @@ if [[ "$RNABAG_OBJECT_DATA_DIR" != "$DEPLOY_ROOT/object-storage" ]]; then
   echo "Unexpected object data path; reset refused." >&2
   exit 1
 fi
+if ! docker info >/dev/null 2>&1; then
+  echo "The current user cannot access Docker." >&2
+  exit 1
+fi
+
+export RNABAG_UID="$(id -u)"
+export RNABAG_GID="$(id -g)"
+RUNNING_APP_SERVICES="$(
+  docker compose \
+    --env-file "$CONFIG_FILE" \
+    -f "$SCRIPT_DIR/compose.app-cpu.yml" \
+    ps --status running --services
+)"
+if grep -qx app <<<"$RUNNING_APP_SERVICES"; then
+  echo "Destructive reset refused while the RNABag app is running." >&2
+  echo "Run deploy/app-down.sh first, then retry." >&2
+  exit 1
+fi
 
 docker compose \
   --env-file "$CONFIG_FILE" \
