@@ -1,0 +1,32 @@
+name: rnabag-pong-probe
+
+services:
+  pong:
+    build:
+      context: pong_probe
+      dockerfile: Dockerfile
+    image: rnabag-pong-probe:latest
+    restart: unless-stopped
+    init: true
+    read_only: true
+    user: "65534:65534"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      RNABAG_PONG_HOST: "0.0.0.0"
+      RNABAG_PONG_PORT: "8080"
+    ports:
+      - "${RNABAG_PONG_BIND_IP:-127.0.0.1}:${RNABAG_PONG_PORT:-18080}:8080"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import http.client; c=http.client.HTTPConnection('127.0.0.1',8080,timeout=5); c.request('GET','/probe/ping'); r=c.getresponse(); body=r.read(); assert r.status==200; assert body==b'pong\\n'; c.close()"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    stop_grace_period: 10s

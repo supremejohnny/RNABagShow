@@ -483,7 +483,7 @@
   function applyPublicPreview() {
     if (!publicPreview) return;
     const style = document.createElement("style");
-    style.textContent = ".public-preview-banner{padding:10px 20px;color:#503b08;background:#fff3c4;border-bottom:1px solid #ead58a;text-align:center;font-size:13px;font-weight:700}.public-preview .status::before{background:#d69b13;box-shadow:0 0 0 4px rgba(214,155,19,.14)}.public-preview .js-dropzone{opacity:.62;cursor:not-allowed}.public-preview .js-dropzone:hover{background:#fbfcfe;border-color:#aeb9c9}.public-preview .js-sample-link[aria-disabled=true]{opacity:.58;cursor:not-allowed}.public-preview .js-run:disabled,.public-preview .js-demo-run:disabled{cursor:not-allowed}";
+    style.textContent = ".public-preview-banner{padding:10px 20px;color:#503b08;background:#fff3c4;border-bottom:1px solid #ead58a;text-align:center;font-size:13px;font-weight:700}.public-preview .status::before{background:#d69b13;box-shadow:0 0 0 4px rgba(214,155,19,.14)}.public-preview .js-dropzone{opacity:.62;cursor:not-allowed}.public-preview .js-dropzone:hover{background:#fbfcfe;border-color:#aeb9c9}.public-preview .js-sample-link[aria-disabled=true]{opacity:.58;cursor:not-allowed}.public-preview .js-run:disabled,.public-preview .js-demo-run:disabled{cursor:not-allowed}.pong-indicator[data-state=checking]{color:#7c4b16}.pong-indicator[data-state=ok]{color:#2ca66f}.pong-indicator[data-state=unavailable]{color:#c0392b}";
     document.head.append(style);
     const banner = document.createElement("div");
     banner.className = "public-preview-banner";
@@ -501,6 +501,33 @@
     $$(".stage-subtitle").forEach(node => {
       node.textContent = node.textContent.replace("本地 API", "后续推理服务").replace("提交后", "服务开放后");
     });
+    const probePath = runtimeConfig.probePath;
+    if (probePath) {
+      const indicator = document.createElement("span");
+      indicator.className = "pong-indicator";
+      indicator.setAttribute("aria-live", "polite");
+      indicator.dataset.state = "checking";
+      indicator.textContent = "Connectivity: checking...";
+      const banner = $(".public-preview-banner");
+      if (banner) banner.append(document.createTextNode(" · "), indicator);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      fetch(probePath, { cache: "no-store", signal: controller.signal })
+        .then(response => {
+          if (!response.ok) throw new Error();
+          return response.text();
+        })
+        .then(text => {
+          const ok = text.trim() === "pong";
+          indicator.textContent = ok ? "Connectivity: pong" : "Connectivity: unavailable";
+          indicator.dataset.state = ok ? "ok" : "unavailable";
+        })
+        .catch(() => {
+          indicator.textContent = "Connectivity: unavailable";
+          indicator.dataset.state = "unavailable";
+        })
+        .finally(() => clearTimeout(timer));
+    }
   }
 
   ensureDemoControls();

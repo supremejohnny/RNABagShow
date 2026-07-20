@@ -181,3 +181,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+#opencode skill
+.opencode_harness/

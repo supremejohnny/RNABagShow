@@ -1,12 +1,17 @@
 # RNABag server deployment
 
-The server deployment has three Compose projects:
+The server deployment has three Compose projects and one optional standalone probe:
 
 - `compose.persistence.yml`: PostgreSQL and private MinIO.
 - `compose.app-cpu.yml`: one managed FastAPI/Uvicorn process for the frontend,
   API, queue, and CPU inference.
 - `compose.gateway.yml`: optional Nginx access restricted to the approved
   intranet CIDR. It exposes only the application, never PostgreSQL or MinIO.
+- `compose.pong-probe.yml`: standalone Pong connectivity probe for tang3.
+  This is a zero-dependency Python HTTP service running on the tailnet. It
+  responds to `GET /probe/ping` with `pong\n` and no-store caching. It does
+  not perform inference, storage, or authentication. The public-preview bastion
+  Nginx proxies only the exact `/probe/ping` path to this service.
 
 FastAPI, PostgreSQL, and MinIO listen on server loopback only. The optional
 gateway is the sole intranet listener. Mutable data and secrets stay outside
@@ -117,8 +122,8 @@ authentication, rate-limit, and network review.
 ## Temporary public-IP static preview
 
 The approved bastion preview is static-only and deliberately has no connection
-to FastAPI or the main inference server. Build its allowlisted files into a new
-empty temporary directory:
+to FastAPI or the main inference server, except for one no-input connectivity
+probe. Build its allowlisted files into a new empty temporary directory:
 
 ```bash
 preview_root="$(mktemp -d)"
@@ -128,8 +133,28 @@ preview_root="$(mktemp -d)"
 Deploy only the generated `site/` contents to `/var/www/rnabag` on the bastion
 host and install `deploy/public-preview/nginx-rnabag-preview.conf` as an
 independent Nginx site. The preview runtime disables upload, demo-data, and run
-controls. Nginx additionally blocks browser connections with
-`connect-src 'none'` and returns `503 API_NOT_ENABLED` for `/api/v1/`.
+controls. Nginx permits same-origin browser connections and returns
+`503 API_NOT_ENABLED` for `/api/v1/`. Only the exact path `/probe/ping` is
+proxied to the tang3 Pong service (currently verified Tailscale address
+`100.113.222.1`); this endpoint performs no storage, no inference, and
+accepts no input.
+
+The Pong probe is a separate, dependency-free Python HTTP service deployed via
+`compose.pong-probe.yml` on tang3. Start it with:
+
+```bash
+RNABAG_PONG_BIND_IP=100.113.222.1 RNABAG_PONG_PORT=18080 \
+  docker compose -f deploy/compose.pong-probe.yml up -d --build --wait
+```
+
+The bind IP `100.113.222.1` is the current verified tang3 Tailscale address and
+is runtime state. When validating the pong probe config alongside the env-file
+projects, use:
+
+```bash
+RNABAG_PONG_BIND_IP=127.0.0.1 \
+  docker compose -f deploy/compose.pong-probe.yml config --quiet
+```
 
 Do not copy `backend/`, `RNABag/`, `mapping/`, `sampledata/`, credentials, or
 mutable server data to the bastion. This temporary HTTP-by-IP preview is not a

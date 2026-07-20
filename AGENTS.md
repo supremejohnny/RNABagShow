@@ -21,8 +21,11 @@ the routed VPN client network `172.28.0.0/24` is approved for the current
 intranet test phase only. A temporary, fully public, HTTP-by-IP static preview
 on the `bastion` host is also approved. It must use the preview-only artifact
 from `deploy/public-preview/`: no API proxy, uploads, sample TSVs, backend,
-checkpoints, persistence, or inference may be deployed there. Public API
-exposure and a durable domain/TLS deployment remain unapproved separate phases.
+checkpoints, persistence, or inference may be deployed there. The sole exception
+is the zero-dependency, no-input, no-storage `/probe/ping` endpoint proxied to
+the tang3 Pong connectivity probe, which responds only with `pong\n` and
+performs no storage, no inference, and accepts no input. Public API exposure and
+a durable domain/TLS deployment remain unapproved separate phases.
 
 Never describe model output as a clinical diagnosis. Persistence is limited to
 the approved analysis metadata/result and private raw-upload object described
@@ -68,6 +71,13 @@ secrets, or environment files in the repository checkout.
   test-data reset commands.
 - `deploy/public-preview/` and `deploy/build-public-preview.sh`: allowlisted
   static-only public preview artifact and API-disabled Nginx configuration.
+- `deploy/pong_probe/server.py`: zero-dependency Python HTTP Pong connectivity
+  probe for the tang3 tailnet host. Responds `pong\n` to `GET /probe/ping`
+  with `Cache-Control: no-store`. No inference, storage, or input handling.
+- `deploy/compose.pong-probe.yml`: hardened Compose deployment for the Pong
+  probe. Builds a dedicated Docker image from `deploy/pong_probe/Dockerfile`.
+  Runs non-root, read-only, drops all capabilities, sets no-new-privileges, and
+  includes a health check. No volumes, database, or mutable state.
 - `backend/app/inference.py`: TSV validation, GeneID mapping, ordered 4096-HVG
   matrix construction, checkpoint loading, and prediction formatting.
 - `backend/app/catalog.py`: API task names, modalities, and label order.
@@ -150,13 +160,21 @@ to port 8000; CORS is restricted to local origins.
 in `deploy/README.md`; FastAPI serves both the frontend and API from one
 loopback-only port, and the deployment checkout is mounted read-only.
 
-Before handing off backend/preprocessing changes, run:
+Before handing off backend/preprocessing or pong-probe changes, run:
 
 ```bash
 python3 -m py_compile backend/app/main.py backend/app/inference.py
 python3 -m unittest discover -s backend/tests -v
+python3 -m unittest discover -s deploy/pong_probe/tests -v
+python3 -m py_compile deploy/pong_probe/server.py
 sed -n '/<script>/,/<\/script>/p' frontend/index.html | sed '1d;$d' | node --check
+node --check frontend/rnabag-variant.js
 bash -n deploy/*.sh
+preview_root="$(mktemp -d)"
+./deploy/build-public-preview.sh "$preview_root/site"
+find "$preview_root/site" -type f -print | sort
+RNABAG_PONG_BIND_IP=127.0.0.1 \
+  docker compose -f deploy/compose.pong-probe.yml config --quiet
 docker compose --env-file deploy/persistence.env.example \
   -f deploy/compose.persistence.yml config --quiet
 RNABAG_UID="$(id -u)" RNABAG_GID="$(id -g)" \
