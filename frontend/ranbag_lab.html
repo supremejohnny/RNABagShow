@@ -199,6 +199,10 @@
     .sample-result-head > span { flex: none; color: var(--lime); font-size: 8px; font-weight: 800; }
     .sample-score-list .probability { margin: 7px 0; }
     .sample-score-list .rank-row { margin: 6px 0; }
+    .workflow-stage + .workflow-stage { margin-top: 10px; padding-top: 9px; border-top: 1px dashed rgba(255, 255, 255, .13); }
+    .workflow-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-bottom: 5px; }
+    .workflow-stage-head small { color: rgba(255, 255, 255, .45); font-size: 6px; letter-spacing: .08em; text-transform: uppercase; }
+    .workflow-stage-head strong { color: var(--lime); font-size: 7px; }
     .result-summary { padding: 9px 10px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .1); border-radius: 9px; position: relative; z-index: 1; }
     .result-summary small { color: rgba(255, 255, 255, .5); font-size: 8px; }
     .result-summary strong { display: block; margin-top: 2px; overflow: hidden; color: var(--lime); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
@@ -274,7 +278,7 @@
 
         <div class="main-panel">
           <header class="task-header">
-            <div class="task-title-row"><div><p class="task-kicker js-task-modality">组织 RNA</p><h2 class="js-task-title">Tissue Origin Identification</h2></div><code class="api-key js-api-key">input: tissue</code></div>
+            <div class="task-title-row"><div><p class="task-kicker js-task-modality">组织 RNA</p><h2 class="js-task-title">Origin and Detect</h2></div><code class="api-key js-api-key">input: tissue</code></div>
             <div class="task-summary"><div><span class="summary-label">Biological objective</span><p class="js-task-description"></p></div><div><span class="summary-label">Task specification</span><ul class="task-specs js-task-specs"></ul></div></div>
           </header>
 
@@ -303,7 +307,7 @@
             <section class="result-card" id="step-result" data-workflow-step aria-labelledby="result-title">
               <div class="result-head"><div><small>04 · Graphical output</small><strong class="js-result-title" id="result-title">Prediction preview</strong></div><span class="demo-badge js-result-badge">RNABAG CHECKPOINT</span></div>
               <div class="chart js-chart"><div class="empty-chart"><div class="empty-orbit"></div><p>选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。</p></div></div>
-              <div class="result-summary js-result-summary"><small>Expected output</small><strong class="js-expected-output">36 tissue classes</strong></div>
+              <div class="result-summary js-result-summary"><small>Expected output</small><strong class="js-expected-output">Tissue origin + Healthy / Cancer</strong></div>
               <button class="button run js-run" type="button">提交本地分析</button>
               <p class="disclaimer">当前结果由 RNABag checkpoint 在本地生成，仅限研究展示，不用于临床诊断。</p>
             </section>

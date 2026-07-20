@@ -26,6 +26,9 @@ MODEL_TASKS = {
     "platelet_cancer_detection": ("platelet_cancer_detect", "Platelet_cancer_detect.ckpt"),
     "platelet_tumor_localization": ("platelet_tumor_local", "Platelet_tumor_local.ckpt"),
 }
+ORIGIN_AND_DETECT_TASK = "tissue_origin_and_cancer_detection"
+ORIGIN_TASK = "tissue_origin_identification"
+TISSUE_CANCER_TASK = "tissue_cancer_detection"
 
 
 class InputValidationError(ValueError):
@@ -539,16 +542,52 @@ def run_checkpoint_inference(
     filename: str,
     task: str,
 ) -> dict[str, Any]:
-    if task not in MODEL_TASKS:
+    if task not in MODEL_TASKS and task != ORIGIN_AND_DETECT_TASK:
         raise InferenceRuntimeError("TASK_NOT_IMPLEMENTED", "No checkpoint is configured for this task.")
     definition = TASKS[task]
     matrix, summary = preprocess_tsv(path, filename=filename)
     if matrix is None:
         raise InferenceRuntimeError("PREPROCESSING_FAILED", "Model input matrix was not created.")
 
-    predictions, model_version = _predict(matrix, task)
-    for sample_id, prediction in zip(summary.sample_ids, predictions, strict=True):
-        prediction["sample_id"] = sample_id
+    workflow: list[dict[str, str]] | None = None
+    model_versions: dict[str, str] | None = None
+    if task == ORIGIN_AND_DETECT_TASK:
+        origin_predictions, origin_version = _predict(matrix, ORIGIN_TASK)
+        cancer_predictions, cancer_version = _predict(matrix, TISSUE_CANCER_TASK)
+        predictions = [
+            {
+                "sample_id": sample_id,
+                "origin": origin_prediction,
+                "cancer_detection": cancer_prediction,
+            }
+            for sample_id, origin_prediction, cancer_prediction in zip(
+                summary.sample_ids,
+                origin_predictions,
+                cancer_predictions,
+                strict=True,
+            )
+        ]
+        model_versions = {
+            "origin": origin_version,
+            "cancer_detection": cancer_version,
+        }
+        workflow = [
+            {
+                "stage": "origin",
+                "task": ORIGIN_TASK,
+                "model_version": origin_version,
+            },
+            {
+                "stage": "cancer_detection",
+                "task": TISSUE_CANCER_TASK,
+                "model_version": cancer_version,
+            },
+        ]
+        model_version = f"{origin_version}+{cancer_version}"
+    else:
+        predictions, model_version = _predict(matrix, task)
+        for sample_id, prediction in zip(summary.sample_ids, predictions, strict=True):
+            prediction["sample_id"] = sample_id
 
     warnings = [
         "Research-use output only; RNABag predictions are not clinical diagnoses."
@@ -563,7 +602,7 @@ def run_checkpoint_inference(
             "Duplicate GeneID/model-Symbol rows were resolved with first occurrence wins."
         )
 
-    return {
+    result = {
         "schema_version": 1,
         "mode": "checkpoint",
         "task": task,
@@ -573,3 +612,7 @@ def run_checkpoint_inference(
         "predictions": predictions,
         "warnings": warnings,
     }
+    if workflow is not None and model_versions is not None:
+        result["workflow"] = workflow
+        result["model_versions"] = model_versions
+    return result

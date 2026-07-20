@@ -30,7 +30,8 @@
       label: "tissue", subtitle: "组织 RNA", icon: "TI", enabled: true,
       tasks: {
         cancer: { title: "Tissue Cancer Detection", apiTask: "tissue_cancer_detection", sampleKey: "tissue", description: "评估组织来源的 bulk RNA expression profile 是否呈现癌症相关转录信号，适用于研究队列中的癌症状态分层。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: binary classification", "Labels: Healthy / Cancer", "Representation: 4096 HVGs", "Output: class probability"], expected: "Healthy / Cancer", type: "binary" },
-        origin: { title: "Tissue Origin Identification", apiTask: "tissue_origin_identification", sampleKey: "tissue", description: "根据全转录组表达特征推断样本最可能的组织来源，用于跨组织来源追踪、样本注释与 provenance confirmation。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: 36-class classification", "Labels: tissue-origin ontology", "Representation: 4096 HVGs", "Output: ranked probabilities"], expected: "36 tissue classes", type: "rank" }
+        origin: { title: "Tissue Origin Identification", apiTask: "tissue_origin_identification", sampleKey: "tissue", description: "根据全转录组表达特征推断样本最可能的组织来源，用于跨组织来源追踪、样本注释与 provenance confirmation。", specs: ["Input: tissue-derived bulk RNA-seq", "Head: 36-class classification", "Labels: tissue-origin ontology", "Representation: 4096 HVGs", "Output: ranked probabilities"], expected: "36 tissue classes", type: "rank" },
+        originDetect: { title: "Origin and Detect", apiTask: "tissue_origin_and_cancer_detection", sampleKey: "tissue", description: "对每个 tissue 样本先使用 Tissue_origin checkpoint 溯源，再使用 Tissue_cancer_detect checkpoint 输出 Healthy / Cancer，同时保留两个阶段的概率。", specs: ["Input: tissue-derived bulk RNA-seq", "Stage 1: 36-class tissue origin", "Stage 2: binary cancer detection", "Checkpoints: Tissue_origin → Tissue_cancer_detect", "Output: paired sample-level predictions"], expected: "Tissue origin + Healthy / Cancer", type: "workflow" }
       }
     },
     plasma: {
@@ -46,11 +47,11 @@
     }
   };
   if (!isLab) {
-    inputs.tissue.tasks = { origin: inputs.tissue.tasks.origin };
+    inputs.tissue.tasks = { originDetect: inputs.tissue.tasks.originDetect, origin: inputs.tissue.tasks.origin };
     inputs.platelet.tasks = { cancer: inputs.platelet.tasks.cancer };
   }
-  const taskLabels = { cancer: "Cancer detection", origin: "Tissue origin · 36 classes", location: "Tumor localization · 5 classes" };
-  const defaultTasks = { tissue: "origin", platelet: "cancer" };
+  const taskLabels = { cancer: "Cancer detection", origin: "Tissue origin · 36 classes", originDetect: "Origin and Detect", location: "Tumor localization · 5 classes" };
+  const defaultTasks = { tissue: "originDetect", platelet: "cancer" };
   const state = { activeInput: "tissue", activeTask: defaultTasks.tissue, selectedFile: null, runToken: 0, analysisId: null, status: "ready", lastStatus: "" };
   let programmaticStep = null;
   let programmaticSettleTimer = 0;
@@ -255,6 +256,22 @@
     const predictions = Array.isArray(result.predictions) ? result.predictions : [];
     if (!predictions.length) throw new Error("API returned no sample predictions.");
     const sampleResults = predictions.map((prediction, sampleIndex) => {
+      if (task.type === "workflow") {
+        const origin = prediction.origin || {};
+        const cancer = prediction.cancer_detection || {};
+        const originScores = Array.isArray(origin.scores) ? origin.scores : [];
+        const cancerScores = Array.isArray(cancer.scores) ? cancer.scores : [];
+        if (!originScores.length || !cancerScores.length) throw new Error("API returned an incomplete workflow prediction.");
+        const originRows = originScores.slice(0, 5).map(item => ({ label: escapeHtml(item.label), value: Math.round(item.score * 1000) / 10 }));
+        const cancerRows = cancerScores.slice(0, 2).map(item => ({ label: escapeHtml(item.label), value: Math.round(item.score * 1000) / 10 }));
+        const originWinner = originScores.find(item => item.label === origin.predicted_label) || originScores[0];
+        const cancerWinner = cancerScores.find(item => item.label === cancer.predicted_label) || cancerScores[0];
+        const originValue = Math.round(originWinner.score * 1000) / 10;
+        const cancerValue = Math.round(cancerWinner.score * 1000) / 10;
+        const originChart = originRows.map(row => `<div class="rank-row"><strong>${row.label}</strong><div class="bar"><i data-width="${row.value}"></i></div><span>${row.value}%</span></div>`).join("");
+        const cancerChart = cancerRows.map((row, index) => `<div class="probability ${index ? "secondary" : ""}"><div class="prob-meta"><strong>${row.label}</strong><span>${row.value}%</span></div><div class="bar"><i data-width="${row.value}"></i></div></div>`).join("");
+        return `<section class="sample-result" role="listitem"><header class="sample-result-head"><div><small>Sample ${sampleIndex + 1} / ${predictions.length}</small><strong>${escapeHtml(prediction.sample_id)}</strong></div><span>${escapeHtml(origin.predicted_label)} → ${escapeHtml(cancer.predicted_label)}</span></header><div class="sample-score-list"><div class="workflow-stage"><div class="workflow-stage-head"><small>01 · Origin</small><strong>${escapeHtml(origin.predicted_label)} · ${originValue}%</strong></div>${originChart}</div><div class="workflow-stage"><div class="workflow-stage-head"><small>02 · Detect</small><strong>${escapeHtml(cancer.predicted_label)} · ${cancerValue}%</strong></div>${cancerChart}</div></div></section>`;
+      }
       const scores = Array.isArray(prediction.scores) ? prediction.scores : [];
       const rows = scores.slice(0, task.type === "binary" ? 2 : 5).map(item => ({ label: escapeHtml(item.label), value: Math.round(item.score * 1000) / 10 }));
       const predicted = scores.find(item => item.label === prediction.predicted_label) || scores[0];

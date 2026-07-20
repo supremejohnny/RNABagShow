@@ -59,6 +59,70 @@ the original column order, and every entry carries the corresponding
 `sample_id`. The frontend renders all returned sample predictions in a
 scrollable result list.
 
+### Origin and Detect workflow
+
+Submit `task=tissue_origin_and_cancer_detection` to run two existing tissue
+checkpoints in order for every sample. The service preprocesses the TSV once,
+runs `Tissue_origin.ckpt`, then runs `Tissue_cancer_detect.ckpt` over the same
+4096-HVG sample tensor. The first predicted label is recorded as provenance
+context; it is not added to or used to transform the cancer-checkpoint input.
+
+The result keeps the two stages separate while preserving sample-column order:
+
+```json
+{
+  "schema_version": 1,
+  "mode": "checkpoint",
+  "task": "tissue_origin_and_cancer_detection",
+  "modality": "tissue",
+  "model_version": "Tissue_origin-epoch15-step5135+Tissue_cancer_detect-epoch29-step146098",
+  "model_versions": {
+    "origin": "Tissue_origin-epoch15-step5135",
+    "cancer_detection": "Tissue_cancer_detect-epoch29-step146098"
+  },
+  "workflow": [
+    {
+      "stage": "origin",
+      "task": "tissue_origin_identification",
+      "model_version": "Tissue_origin-epoch15-step5135"
+    },
+    {
+      "stage": "cancer_detection",
+      "task": "tissue_cancer_detection",
+      "model_version": "Tissue_cancer_detect-epoch29-step146098"
+    }
+  ],
+  "input_summary": {
+    "sample_count": 12
+  },
+  "predictions": [
+    {
+      "sample_id": "sample_1",
+      "origin": {
+        "predicted_label": "Pancreas",
+        "scores": [
+          {"label": "Pancreas", "score": 0.99}
+        ]
+      },
+      "cancer_detection": {
+        "predicted_label": "Cancer",
+        "scores": [
+          {"label": "Cancer", "score": 0.94},
+          {"label": "Healthy", "score": 0.06}
+        ]
+      }
+    }
+  ],
+  "warnings": [
+    "Research-use output only; RNABag predictions are not clinical diagnoses."
+  ]
+}
+```
+
+The real `origin.scores` array contains all 36 tissue classes and the real
+`cancer_detection.scores` array contains both binary classes, each sorted by
+descending score. The abbreviated arrays above illustrate the schema only.
+
 The frontend's one-click demo reads the two verified, versioned fixtures from
 `sampledata/` through `GET /api/v1/demo-data/tissue` or
 `GET /api/v1/demo-data/platelet`, then submits the selected bytes through the

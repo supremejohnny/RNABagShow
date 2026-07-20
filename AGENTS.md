@@ -111,6 +111,7 @@ Enabled API tasks:
 
 - `tissue_cancer_detection`
 - `tissue_origin_identification`
+- `tissue_origin_and_cancer_detection`
 - `platelet_cancer_detection`
 - `platelet_tumor_localization`
 
@@ -118,6 +119,13 @@ Plasma remains disabled even though a checkpoint file is present. Platelet
 cancer detection uses the legacy Healthy-probability threshold `0.003955459`;
 other tasks use argmax. Label order in `backend/app/catalog.py` must continue to
 match `RNABag/infer_code/data/id_to_name.py` and checkpoint training.
+
+`tissue_origin_and_cancer_detection` is a two-stage workflow over each sample
+column. It first records the 36-class `Tissue_origin.ckpt` result, then runs the
+same preprocessed sample through `Tissue_cancer_detect.ckpt` and records the
+Healthy/Cancer result. The origin label is workflow context; it is not injected
+as a feature into the cancer checkpoint, whose input remains the 4096-HVG
+expression tensor.
 
 The service defaults to one inference worker. This is intentional: expected
 early concurrency is 5-10 visitors, while the company's eight GPUs are also

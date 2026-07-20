@@ -115,6 +115,74 @@ class InputInspectionTests(unittest.TestCase):
             result["input_summary"]["sample_ids"],
         )
 
+    def test_origin_and_detect_runs_both_checkpoints_for_every_sample(self) -> None:
+        path = SAMPLE_DIR / "tissue_sample_fpkm_to_joh.tsv"
+        called_tasks: list[str] = []
+
+        def fake_predict(matrix: np.ndarray, task: str):
+            called_tasks.append(task)
+            self.assertEqual(matrix.shape, (12, 4096))
+            if task == "tissue_origin_identification":
+                return (
+                    [
+                        {
+                            "predicted_label": "Pancreas",
+                            "scores": [
+                                {"label": "Pancreas", "score": 0.9},
+                                {"label": "Liver", "score": 0.1},
+                            ],
+                        }
+                        for _ in range(matrix.shape[0])
+                    ],
+                    "origin-model",
+                )
+            if task == "tissue_cancer_detection":
+                return (
+                    [
+                        {
+                            "predicted_label": "Cancer",
+                            "scores": [
+                                {"label": "Cancer", "score": 0.8},
+                                {"label": "Healthy", "score": 0.2},
+                            ],
+                        }
+                        for _ in range(matrix.shape[0])
+                    ],
+                    "cancer-model",
+                )
+            self.fail(f"Unexpected task: {task}")
+
+        with patch("backend.app.inference._predict", side_effect=fake_predict):
+            result = run_checkpoint_inference(
+                path,
+                filename=path.name,
+                task="tissue_origin_and_cancer_detection",
+            )
+
+        self.assertEqual(
+            called_tasks,
+            ["tissue_origin_identification", "tissue_cancer_detection"],
+        )
+        self.assertEqual(result["input_summary"]["sample_count"], 12)
+        self.assertEqual(len(result["predictions"]), 12)
+        self.assertEqual(
+            [prediction["sample_id"] for prediction in result["predictions"]],
+            result["input_summary"]["sample_ids"],
+        )
+        self.assertEqual(result["predictions"][0]["origin"]["predicted_label"], "Pancreas")
+        self.assertEqual(
+            result["predictions"][0]["cancer_detection"]["predicted_label"],
+            "Cancer",
+        )
+        self.assertEqual(
+            result["model_versions"],
+            {"origin": "origin-model", "cancer_detection": "cancer-model"},
+        )
+        self.assertEqual(
+            [stage["stage"] for stage in result["workflow"]],
+            ["origin", "cancer_detection"],
+        )
+
     def test_real_checkpoint_result_contract(self) -> None:
         path = SAMPLE_DIR / "Platelet_sample_to_joh.tsv"
         result = run_checkpoint_inference(

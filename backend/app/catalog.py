@@ -56,6 +56,23 @@ TASKS: dict[str, dict[str, Any]] = {
         "labels": TISSUE_ORIGIN_LABELS,
         "output_type": "ranked",
     },
+    "tissue_origin_and_cancer_detection": {
+        "modality": "tissue",
+        "enabled": True,
+        "output_type": "workflow",
+        "stages": [
+            {
+                "stage": "origin",
+                "task": "tissue_origin_identification",
+                "labels": TISSUE_ORIGIN_LABELS,
+            },
+            {
+                "stage": "cancer_detection",
+                "task": "tissue_cancer_detection",
+                "labels": ["Healthy", "Cancer"],
+            },
+        ],
+    },
     "plasma_cancer_detection": {
         "modality": "plasma",
         "enabled": False,
