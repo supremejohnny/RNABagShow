@@ -97,6 +97,9 @@ the removed/older frontend entry as a second source of truth.
 7. `raw_sum` and `input_sum` intentionally contain the same sum of the final
    log1p vector. Both summary-token positions are required by the checkpoints
    for the team's batch-effect mitigation contract.
+8. Each sample column is an independent model input. Preserve sample-column
+   order and return exactly one prediction with the matching `sample_id` for
+   every sample column; the frontend must make every returned sample visible.
 
 The synonym rule is a recommended showcase rule, not a training-derived gold
 standard. Do not change it or encode expected biological predictions until the

@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import numpy as np
 
@@ -80,6 +81,39 @@ class InputInspectionTests(unittest.TestCase):
         self.assertEqual(summary.model_hvg_missing, 45)
         self.assertEqual(summary.sample_count, 12)
         self.assertEqual(matrix.shape, (12, 4096))
+
+    def test_tissue_result_contains_one_prediction_per_sample_column(self) -> None:
+        path = SAMPLE_DIR / "tissue_sample_fpkm_to_joh.tsv"
+
+        def fake_predict(matrix: np.ndarray, task: str):
+            self.assertEqual(task, "tissue_cancer_detection")
+            self.assertEqual(matrix.shape, (12, 4096))
+            return (
+                [
+                    {
+                        "predicted_label": "Healthy",
+                        "scores": [
+                            {"label": "Healthy", "score": 0.75},
+                            {"label": "Cancer", "score": 0.25},
+                        ],
+                    }
+                    for _ in range(matrix.shape[0])
+                ],
+                "test-model",
+            )
+
+        with patch("backend.app.inference._predict", side_effect=fake_predict):
+            result = run_checkpoint_inference(
+                path,
+                filename=path.name,
+                task="tissue_cancer_detection",
+            )
+
+        self.assertEqual(len(result["predictions"]), 12)
+        self.assertEqual(
+            [prediction["sample_id"] for prediction in result["predictions"]],
+            result["input_summary"]["sample_ids"],
+        )
 
     def test_real_checkpoint_result_contract(self) -> None:
         path = SAMPLE_DIR / "Platelet_sample_to_joh.tsv"

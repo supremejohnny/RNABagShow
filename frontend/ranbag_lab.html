@@ -187,6 +187,18 @@
     .rank-row { display: grid; grid-template-columns: 60px minmax(0, 1fr) 32px; align-items: center; gap: 7px; margin: 8px 0; font-size: 8px; }
     .rank-row .bar { height: 6px; }
     .rank-row:first-child { color: var(--lime); }
+    .chart.has-results { display: block; align-content: normal; overflow: hidden; padding: 9px 0 7px; }
+    .sample-results { height: 100%; min-height: 0; padding-right: 7px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+    .sample-result { padding: 3px 0 12px; border-bottom: 1px solid rgba(255, 255, 255, .12); }
+    .sample-result + .sample-result { padding-top: 12px; }
+    .sample-result:last-child { border-bottom: 0; }
+    .sample-result-head { display: flex; align-items: end; justify-content: space-between; gap: 9px; margin-bottom: 6px; }
+    .sample-result-head div { min-width: 0; }
+    .sample-result-head small { display: block; color: rgba(255, 255, 255, .45); font-size: 6px; letter-spacing: .08em; text-transform: uppercase; }
+    .sample-result-head strong { display: block; margin-top: 1px; overflow: hidden; color: #fff; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .sample-result-head > span { flex: none; color: var(--lime); font-size: 8px; font-weight: 800; }
+    .sample-score-list .probability { margin: 7px 0; }
+    .sample-score-list .rank-row { margin: 6px 0; }
     .result-summary { padding: 9px 10px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .1); border-radius: 9px; position: relative; z-index: 1; }
     .result-summary small { color: rgba(255, 255, 255, .5); font-size: 8px; }
     .result-summary strong { display: block; margin-top: 2px; overflow: hidden; color: var(--lime); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
@@ -301,6 +313,6 @@
     </main>
   </div>
   <script src="rnabag-runtime-config.js?v=20260717"></script>
-  <script src="rnabag-variant.js?v=20260717"></script>
+  <script src="rnabag-variant.js?v=20260720"></script>
 </body>
 </html>

@@ -53,6 +53,12 @@ curl -X POST \
 Poll `/api/v1/analyses/{analysis_id}` until it succeeds, then read
 `/api/v1/analyses/{analysis_id}/result`.
 
+Every sample column after `GeneID` is an independent model input. A TSV with
+`N` sample columns therefore returns exactly `N` entries in `predictions`, in
+the original column order, and every entry carries the corresponding
+`sample_id`. The frontend renders all returned sample predictions in a
+scrollable result list.
+
 The frontend's one-click demo reads the two verified, versioned fixtures from
 `sampledata/` through `GET /api/v1/demo-data/tissue` or
 `GET /api/v1/demo-data/platelet`, then submits the selected bytes through the

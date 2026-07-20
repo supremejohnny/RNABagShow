@@ -213,7 +213,10 @@
     state.status = "ready";
     $$(".js-result-title").forEach(node => { node.textContent = publicPreview ? "Public preview" : "Prediction preview"; });
     $$(".js-result-badge").forEach(node => { node.textContent = publicPreview ? "INFERENCE OFFLINE" : "RNABAG CHECKPOINT"; });
-    $$(".js-chart").forEach(chart => { chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`; });
+    $$(".js-chart").forEach(chart => {
+      chart.classList.remove("has-results");
+      chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`;
+    });
     $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Expected output</small><strong>${escapeHtml(currentTask().expected)}</strong>`; });
     $$(".js-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "推理服务暂未开放" : "提交本地分析"; });
     $$(".js-demo-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "Demo 暂未开放" : "Use Demo Data"; });
@@ -228,7 +231,10 @@
   }
   function showProgress(message) {
     $$(".js-result-title").forEach(node => { node.textContent = "Local analysis"; });
-    $$(".js-chart").forEach(chart => { chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${escapeHtml(message)}</p></div>`; });
+    $$(".js-chart").forEach(chart => {
+      chart.classList.remove("has-results");
+      chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${escapeHtml(message)}</p></div>`;
+    });
     updateContext(message);
   }
   function apiErrorMessage(payload, fallback) {
@@ -245,17 +251,25 @@
   }
   function renderResult(result) {
     const task = currentTask();
-    const prediction = result.predictions[0];
-    const rows = prediction.scores.slice(0, task.type === "binary" ? 2 : 5).map(item => ({ label: escapeHtml(item.label), value: Math.round(item.score * 1000) / 10 }));
+    const predictions = Array.isArray(result.predictions) ? result.predictions : [];
+    if (!predictions.length) throw new Error("API returned no sample predictions.");
+    const sampleResults = predictions.map((prediction, sampleIndex) => {
+      const scores = Array.isArray(prediction.scores) ? prediction.scores : [];
+      const rows = scores.slice(0, task.type === "binary" ? 2 : 5).map(item => ({ label: escapeHtml(item.label), value: Math.round(item.score * 1000) / 10 }));
+      const predicted = scores.find(item => item.label === prediction.predicted_label) || scores[0];
+      const predictedValue = predicted ? Math.round(predicted.score * 1000) / 10 : 0;
+      const chartRows = task.type === "binary"
+        ? rows.map((row, index) => `<div class="probability ${index ? "secondary" : ""}"><div class="prob-meta"><strong>${row.label}</strong><span>${row.value}%</span></div><div class="bar"><i data-width="${row.value}"></i></div></div>`).join("")
+        : rows.map(row => `<div class="rank-row"><strong>${row.label}</strong><div class="bar"><i data-width="${row.value}"></i></div><span>${row.value}%</span></div>`).join("");
+      return `<section class="sample-result" role="listitem"><header class="sample-result-head"><div><small>Sample ${sampleIndex + 1} / ${predictions.length}</small><strong>${escapeHtml(prediction.sample_id)}</strong></div><span>${escapeHtml(prediction.predicted_label)} · ${predictedValue}%</span></header><div class="sample-score-list">${chartRows}</div></section>`;
+    }).join("");
     $$(".js-chart").forEach(chart => {
-      chart.innerHTML = task.type === "binary" ? rows.map((row, index) => `<div class="probability ${index ? "secondary" : ""}"><div class="prob-meta"><strong>${row.label}</strong><span>${row.value}%</span></div><div class="bar"><i data-width="${row.value}"></i></div></div>`).join("") : `<div>${rows.map(row => `<div class="rank-row"><strong>${row.label}</strong><div class="bar"><i data-width="${row.value}"></i></div><span>${row.value}%</span></div>`).join("")}</div>`;
+      chart.classList.add("has-results");
+      chart.innerHTML = `<div class="sample-results" role="list" aria-label="${predictions.length} sample predictions">${sampleResults}</div>`;
     });
-    const predicted = prediction.scores.find(item => item.label === prediction.predicted_label) || prediction.scores[0];
-    const predictedValue = Math.round(predicted.score * 1000) / 10;
-    const extra = result.predictions.length > 1 ? ` · 共 ${result.predictions.length} 个样本，当前展示第 1 个` : "";
-    $$(".js-result-title").forEach(node => { node.textContent = "RNABag prediction"; });
+    $$(".js-result-title").forEach(node => { node.textContent = "RNABag sample predictions"; });
     $$(".js-result-badge").forEach(node => { node.textContent = "CHECKPOINT"; });
-    $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Predicted class · ${escapeHtml(prediction.sample_id)}${extra}</small><strong>${escapeHtml(prediction.predicted_label)} · ${predictedValue}%</strong>`; });
+    $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Sample-level predictions</small><strong>${predictions.length} / ${result.input_summary.sample_count} samples completed</strong>`; });
     requestAnimationFrame(() => $$("[data-width]").forEach(bar => { bar.style.width = `${bar.dataset.width}%`; }));
     const summary = result.input_summary;
     const duplicateText = summary.duplicate_gene_rows ? `；检出 ${summary.duplicate_gene_rows} 个重复 GeneID 行，按输入顺序保留第一次出现并丢弃后续重复行` : "";
