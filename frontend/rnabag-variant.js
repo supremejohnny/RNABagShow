@@ -46,11 +46,12 @@
     }
   };
   if (!isLab) {
-    inputs.tissue.tasks = { cancer: inputs.tissue.tasks.cancer };
+    inputs.tissue.tasks = { origin: inputs.tissue.tasks.origin };
     inputs.platelet.tasks = { cancer: inputs.platelet.tasks.cancer };
   }
   const taskLabels = { cancer: "Cancer detection", origin: "Tissue origin · 36 classes", location: "Tumor localization · 5 classes" };
-  const state = { activeInput: "tissue", activeTask: "cancer", selectedFile: null, runToken: 0, analysisId: null, status: "ready", lastStatus: "" };
+  const defaultTasks = { tissue: "origin", platelet: "cancer" };
+  const state = { activeInput: "tissue", activeTask: defaultTasks.tissue, selectedFile: null, runToken: 0, analysisId: null, status: "ready", lastStatus: "" };
   let programmaticStep = null;
   let programmaticSettleTimer = 0;
 
@@ -188,7 +189,7 @@
   }
   function selectInput(key) {
     state.activeInput = key;
-    state.activeTask = Object.keys(inputs[key].tasks)[0];
+    state.activeTask = inputs[key].tasks[defaultTasks[key]] ? defaultTasks[key] : Object.keys(inputs[key].tasks)[0];
     state.runToken += 1;
     renderInputs(); renderTasks(); renderTaskDetail();
     scrollToStep("step-task");
@@ -416,7 +417,7 @@
       event.preventDefault();
       scrollToStep(link.dataset.stepTarget || link.getAttribute("href").slice(1), "replace");
     }));
-    $$("[data-restart]").forEach(button => button.addEventListener("click", () => { state.activeInput = "tissue"; state.activeTask = "cancer"; state.runToken += 1; renderInputs(); renderTasks(); renderTaskDetail(); scrollToStep("step-input"); }));
+    $$("[data-restart]").forEach(button => button.addEventListener("click", () => { state.activeInput = "tissue"; state.activeTask = defaultTasks.tissue; state.runToken += 1; renderInputs(); renderTasks(); renderTaskDetail(); scrollToStep("step-input"); }));
   }
   function bindScrollState() {
     if (variant === "lab") return;
