@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Harness"
+  short_description: "Delegate implementation to OpenCode and review it with Codex"
+  default_prompt: "Use $opencode_harness to delegate this bounded implementation task to OpenCode, then independently review and validate the result."
