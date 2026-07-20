@@ -5,6 +5,7 @@ sampledata/*.numbers
 
 # Local agent continuity notes and machine-specific run state
 /harness/
+.agent-runs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
