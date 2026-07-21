@@ -193,6 +193,7 @@ class TestPublicFrontendContract(unittest.TestCase):
         self.assertIn("不用于临床诊断", self.variant)
         self.assertIn('button.disabled = publicPreview', self.variant)
         self.assertIn('button.textContent = publicPreview ? "推理服务暂未开放" : publicApp ? "提交公共分析"', self.variant)
+        self.assertIn('.stage-subtitle, .js-dropzone span, .story-chapter p', self.variant)
 
     def test_public_preview_still_gates_upload_and_inference(self):
         self.assertIn('if (publicPreview) return false;', self.variant)

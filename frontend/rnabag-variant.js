@@ -547,7 +547,9 @@
     else document.body.prepend(banner);
     $$(".status").forEach(node => { node.textContent = "Temporary public app · HTTP"; });
     $$(".disclaimer").forEach(node => { node.textContent = "当前结果由 RNABag checkpoint 生成，仅限研究展示，不用于临床诊断。"; });
-    $$(".stage-subtitle").forEach(node => { node.textContent = node.textContent.replace("本地 API", "RNABag API").replace("本地 checkpoint", "RNABag checkpoint"); });
+    $$(".stage-subtitle, .js-dropzone span, .story-chapter p").forEach(node => {
+      node.textContent = node.textContent.replace("本地 API", "RNABag API").replace("本地 checkpoint", "RNABag checkpoint");
+    });
   }
 
   ensureDemoControls();
