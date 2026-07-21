@@ -106,6 +106,7 @@ class TestPublicProxyContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.conf = read("deploy", "public-proxy", "nginx-rnabag-public.conf")
+        cls.limits = read("deploy", "public-proxy", "nginx-rnabag-limits.conf")
 
     def test_public_listener_and_upstream(self):
         self.assertIn("listen 80 default_server", self.conf)
@@ -113,6 +114,8 @@ class TestPublicProxyContract(unittest.TestCase):
         self.assertIn("proxy_pass http://100.113.222.1:8000", self.conf)
         self.assertNotIn("root ", self.conf)
         self.assertNotIn("API_NOT_ENABLED", self.conf)
+        self.assertNotIn("events {", self.conf)
+        self.assertNotIn("http {", self.conf)
 
     def test_proxy_does_not_buffer_or_spill(self):
         for directive in ("proxy_request_buffering off", "proxy_buffering off", "proxy_cache off", "proxy_max_temp_file_size 0", "access_log off"):
@@ -120,8 +123,8 @@ class TestPublicProxyContract(unittest.TestCase):
 
     def test_limits_and_long_inference_timeouts(self):
         self.assertIn("client_max_body_size 64m", self.conf)
-        self.assertIn("limit_conn_zone", self.conf)
-        self.assertIn("limit_req_zone", self.conf)
+        self.assertIn("limit_conn_zone", self.limits)
+        self.assertIn("limit_req_zone", self.limits)
         self.assertIn("proxy_read_timeout 300s", self.conf)
         self.assertIn("proxy_send_timeout 300s", self.conf)
 

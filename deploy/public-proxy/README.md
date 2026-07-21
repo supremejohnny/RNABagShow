@@ -1,8 +1,10 @@
 # Temporary public application proxy
 
 This is the explicitly temporary HTTP-by-IP validation proxy for the bastion.
-Install `nginx-rnabag-public.conf` as the complete Nginx configuration. It
-forwards the frontend and `/api/v1/` to the FastAPI process on tang3 at its
+Install `nginx-rnabag-limits.conf` under `/etc/nginx/conf.d/` and
+`nginx-rnabag-public.conf` under `/etc/nginx/sites-available/`, then enable the
+site. This preserves the bastion's packaged `/etc/nginx/nginx.conf` while
+forwarding the frontend and `/api/v1/` to the FastAPI process on tang3 at its
 currently verified Tailscale address `100.113.222.1:8000`. The proxy is
 stateless: do not copy the application checkout, checkpoints, persistence
 directories, uploads, or results to the bastion.

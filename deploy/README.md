@@ -156,12 +156,13 @@ builds because direct `files.pythonhosted.org` downloads time out from this
 host. Override `RNABAG_PIP_INDEX_URL` to use another trusted mirror; it is not a
 runtime service dependency and no credentials are supplied to it.
 
-The bastion install is a separate Nginx operation using
-`deploy/public-proxy/nginx-rnabag-public.conf`. It listens on HTTP port 80 for
-`_`, `rnabag.com`, and `www.rnabag.com`, forwards frontend and API traffic to
-tang3, and has explicit upload, request, connection, and inference timeout
-limits. There is no login, TLS, DNS automation, or production claim. Public
-exposure remains a resource-abuse and data-handling risk despite the limits.
+The bastion install is a separate Nginx operation using the site and HTTP-zone
+snippets under `deploy/public-proxy/`; it does not replace the packaged global
+`nginx.conf`. It listens on HTTP port 80 for `_`, `rnabag.com`, and
+`www.rnabag.com`, forwards frontend and API traffic to tang3, and has explicit
+upload, request, connection, and inference timeout limits. There is no login,
+TLS, DNS automation, or production claim. Public exposure remains a
+resource-abuse and data-handling risk despite the limits.
 
 Rollback order is `tang3-down.sh`, remove/disable the public-proxy Nginx site,
 then restore the approved static-only artifact and configuration from
