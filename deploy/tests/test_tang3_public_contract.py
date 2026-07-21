@@ -101,6 +101,13 @@ class TestTang3ScriptContract(unittest.TestCase):
         self.assertIn("/api/v1/tasks", script)
         self.assertIn('"$BASE_URL/"', script)
 
+    def test_status_and_down_supply_compose_user_ids(self):
+        for name in ("tang3-status.sh", "tang3-down.sh"):
+            script = read("deploy", name)
+            self.assertIn('export RNABAG_UID="${RNABAG_UID:-$(id -u)}"', script)
+            self.assertIn('export RNABAG_GID="${RNABAG_GID:-$(id -g)}"', script)
+            self.assertIn("Tang3 config is missing", script)
+
 
 class TestPublicProxyContract(unittest.TestCase):
     @classmethod
