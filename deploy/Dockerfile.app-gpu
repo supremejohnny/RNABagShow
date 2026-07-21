@@ -1,0 +1,24 @@
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y python3 python3-pip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt backend/requirements-persistence.txt /tmp/requirements/
+
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install \
+        --index-url https://download.pytorch.org/whl/cu121 \
+        "torch==2.2.2" \
+    && python3 -m pip install -r /tmp/requirements/requirements.txt \
+    && python3 -c "import boto3, fastapi, numpy, pandas, psycopg, torch, uvicorn"
+
+CMD ["python3", "-m", "uvicorn", "backend.app.main:app", "--host", "127.0.0.1", "--port", "8000", "--workers", "1"]

@@ -5,6 +5,8 @@ The server deployment has three Compose projects and one optional standalone pro
 - `compose.persistence.yml`: PostgreSQL and private MinIO.
 - `compose.app-cpu.yml`: one managed FastAPI/Uvicorn process for the frontend,
   API, queue, and CPU inference.
+- `compose.app-gpu.yml`: temporary tang3 GPU FastAPI/Uvicorn process using one
+  reserved physical GPU exposed as logical `cuda:0`.
 - `compose.gateway.yml`: optional Nginx access restricted to the approved
   intranet CIDR. It exposes only the application, never PostgreSQL or MinIO.
 - `compose.pong-probe.yml`: standalone Pong connectivity probe for tang3.
@@ -22,7 +24,7 @@ Server layout:
 
 ```text
 /home/johnny/services/rnabag/
-├── RNABagShow/          # deployment-only Git checkout
+├── RNABagShow/          # deployment-only Git checkout (CPU layout)
 ├── postgres/           # PostgreSQL cluster files
 ├── object-storage/     # MinIO object data
 ├── runtime/uploads-tmp/
@@ -118,6 +120,46 @@ Inspect or end intranet exposure with:
 loopback and PostgreSQL/MinIO keep running. The external Nginx config is
 preserved for the next start. Public exposure still requires a separate TLS,
 authentication, rate-limit, and network review.
+
+## Temporary tang3 public-IP validation
+
+The user has authorized one temporary end-to-end validation at
+`http://101.133.158.8` while domain and ICP readiness are pending. Tang3 keeps
+the code checkout on `/mnt/nas/johnny/rnabag/RNABagShow` and all mutable state
+under `/home/johnny/services/rnabag/{postgres,object-storage,runtime,backups}`.
+The bastion receives only the forwarding-only configuration in
+`deploy/public-proxy/`; it must never receive code, checkpoints, uploads,
+results, PostgreSQL files, or MinIO objects.
+
+On tang3, first create the external mode-0600 config. The command refuses an
+existing file and does not print generated secrets:
+
+```bash
+./deploy/bootstrap-tang3-config.sh
+RNABAG_CONFIG_FILE=/home/johnny/services/rnabag/config/tang3.env \
+  ./deploy/persistence-up.sh
+RNABAG_CONFIG_FILE=/home/johnny/services/rnabag/config/tang3.env \
+  ./deploy/tang3-up.sh
+RNABAG_CONFIG_FILE=/home/johnny/services/rnabag/config/tang3.env \
+  ./deploy/tang3-smoke-test.sh
+```
+
+The GPU app uses host networking and binds only to the configured tang3
+Tailscale address (`100.113.222.1` by default). PostgreSQL and MinIO remain
+published only on tang3 loopback. `tang3-status.sh` and `tang3-down.sh` inspect
+or stop only the GPU app; stop the GPU app before `persistence-down.sh`.
+
+The bastion install is a separate Nginx operation using
+`deploy/public-proxy/nginx-rnabag-public.conf`. It listens on HTTP port 80 for
+`_`, `rnabag.com`, and `www.rnabag.com`, forwards frontend and API traffic to
+tang3, and has explicit upload, request, connection, and inference timeout
+limits. There is no login, TLS, DNS automation, or production claim. Public
+exposure remains a resource-abuse and data-handling risk despite the limits.
+
+Rollback order is `tang3-down.sh`, remove/disable the public-proxy Nginx site,
+then restore the approved static-only artifact and configuration from
+`deploy/public-preview/`. Do not alter `deploy/public-preview/` to implement
+the validation proxy.
 
 ## Temporary public-IP static preview
 
