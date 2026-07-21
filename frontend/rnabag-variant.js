@@ -1,14 +1,17 @@
 (() => {
   const runtimeConfig = window.RNABAG_RUNTIME_CONFIG || {};
   const publicPreview = runtimeConfig.mode === "public-preview";
+  const localHostname = ["127.0.0.1", "localhost", "::1"].includes(window.location.hostname);
+  const publicHosts = Array.isArray(runtimeConfig.publicHosts) ? runtimeConfig.publicHosts : [];
+  const publicApp = runtimeConfig.mode === "full" && ["http:", "https:"].includes(window.location.protocol) && publicHosts.includes(window.location.hostname);
   const params = new URLSearchParams(window.location.search);
   const variant = document.body.dataset.variant || "two";
   const isLab = params.get("mode") === "lab" || variant === "lab";
   document.body.classList.toggle("lab-mode", isLab);
   document.body.classList.toggle("public-preview", publicPreview);
+  document.body.classList.toggle("public-app", publicApp);
 
   const backendOrigin = "http://127.0.0.1:8000";
-  const localHostname = ["127.0.0.1", "localhost"].includes(window.location.hostname);
   let apiBaseUrl = publicPreview ? "" : window.location.protocol === "file:" ? backendOrigin : "";
   const apiUrl = path => `${apiBaseUrl}${path}`;
   const apiBaseReady = publicPreview ? Promise.resolve() : window.location.protocol !== "file:" && localHostname ? fetch("/api/v1/health/live", { cache: "no-store" })
@@ -217,14 +220,14 @@
     $$(".js-result-badge").forEach(node => { node.textContent = publicPreview ? "INFERENCE OFFLINE" : "RNABAG CHECKPOINT"; });
     $$(".js-chart").forEach(chart => {
       chart.classList.remove("has-results");
-      chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`;
+      chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : publicApp ? "选择 TSV 并提交临时公共分析，查看完整预处理与 checkpoint 输出。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`;
     });
     $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Expected output</small><strong>${escapeHtml(currentTask().expected)}</strong>`; });
-    $$(".js-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "推理服务暂未开放" : "提交本地分析"; });
+    $$(".js-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "推理服务暂未开放" : publicApp ? "提交公共分析" : "提交本地分析"; });
     $$(".js-demo-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "Demo 暂未开放" : "Use Demo Data"; });
     updateContext(); setStepStates();
   }
-  function setRunState(running, label = "提交本地分析") {
+  function setRunState(running, label = publicApp ? "提交公共分析" : "提交本地分析") {
     $$(".js-run").forEach(button => { button.disabled = publicPreview || running; button.textContent = publicPreview ? "推理服务暂未开放" : label; });
     $$(".js-demo-run").forEach(button => { button.disabled = publicPreview || running; });
   }
@@ -232,7 +235,7 @@
     $$(".js-demo-run").forEach(button => { button.disabled = running; button.textContent = label; });
   }
   function showProgress(message) {
-    $$(".js-result-title").forEach(node => { node.textContent = "Local analysis"; });
+    $$(".js-result-title").forEach(node => { node.textContent = publicApp ? "Public analysis" : "Local analysis"; });
     $$(".js-chart").forEach(chart => {
       chart.classList.remove("has-results");
       chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${escapeHtml(message)}</p></div>`;
@@ -302,7 +305,7 @@
     const token = ++state.runToken;
     state.status = "queued";
     setRunState(true, "正在上传…");
-    showProgress("正在将 TSV 发送给本地 RNABag API…");
+    showProgress(`正在将 TSV 发送给 ${publicApp ? "RNABag 公共 API" : "本地 RNABag API"}…`);
     scrollToStep("step-result");
     try {
       await apiBaseReady;
@@ -312,16 +315,16 @@
         const job = await readJson(await fetch(apiUrl(`/api/v1/analyses/${created.analysis_id}`)));
         state.status = job.status;
         if (job.status === "succeeded") { renderResult(await readJson(await fetch(apiUrl(`/api/v1/analyses/${created.analysis_id}/result`)))); return; }
-        if (job.status === "failed") throw new Error(job.error?.message || "Local analysis failed.");
+        if (job.status === "failed") throw new Error(job.error?.message || `${publicApp ? "Public" : "Local"} analysis failed.`);
         setRunState(true, job.status === "validating" ? "正在完整校验…" : "已进入队列…");
-        showProgress(job.status === "validating" ? "正在校验基因、生成 4096 HVG 矩阵并运行 RNABag checkpoint…" : "分析已进入本地单工作者队列…");
+        showProgress(job.status === "validating" ? "正在校验基因、生成 4096 HVG 矩阵并运行 RNABag checkpoint…" : `分析已进入${publicApp ? "公共" : "本地"}单工作者队列…`);
         await new Promise(resolve => setTimeout(resolve, 450));
       }
     } catch (error) {
       if (token !== state.runToken) return;
       state.status = "failed";
       setValidation(`分析未完成：${error.message}`, "warn");
-      showProgress("本地分析失败。请返回 Validate 步骤检查文件或 API 状态。");
+      showProgress(`${publicApp ? "公共" : "本地"}分析失败。请返回 Validate 步骤检查文件或 API 状态。`);
       setStepStates(); updateContext();
     } finally { if (token === state.runToken) setRunState(false); }
   }
@@ -355,7 +358,7 @@
       if (loadToken !== state.runToken) return;
       state.status = "failed";
       setValidation(`Demo Data 无法运行：${error.message}`, "warn");
-      showProgress("Demo Data 加载或分析失败，请检查本地 API 状态。");
+      showProgress(`Demo Data 加载或分析失败，请检查${publicApp ? "公共" : "本地"} API 状态。`);
       setRunState(false);
       setStepStates(); updateContext();
     } finally {
@@ -393,7 +396,7 @@
     $$(".js-context-task").forEach(node => { node.textContent = task.title; });
     $$(".js-context-file").forEach(node => { node.textContent = publicPreview ? "Uploads disabled" : state.selectedFile?.name || "Not selected"; });
     $$(".js-context-analysis").forEach(node => { node.textContent = publicPreview ? "Not available" : state.analysisId || "Not created"; });
-    $$(".js-context-status").forEach(node => { node.textContent = publicPreview ? "Public preview" : extraStatus || (state.status === "ready" ? "Ready for input" : state.status); });
+    $$(".js-context-status").forEach(node => { node.textContent = publicPreview ? "Public preview" : publicApp && !extraStatus ? "Public app" : extraStatus || (state.status === "ready" ? "Ready for input" : state.status); });
     $$(".js-context-output").forEach(node => { node.textContent = task.expected; });
   }
   function bindFileControls() {
@@ -530,6 +533,23 @@
     }
   }
 
+  function applyPublicApp() {
+    if (!publicApp) return;
+    const style = document.createElement("style");
+    style.textContent = ".public-app-banner{padding:10px 20px;color:#173d34;background:#e5f4ec;border-bottom:1px solid #a9d8c2;text-align:center;font-size:13px;font-weight:700}.public-app .status::before{background:#2c8f78;box-shadow:0 0 0 4px rgba(44,143,120,.14)}.public-app .js-dropzone{border-color:#79b9aa}";
+    document.head.append(style);
+    const banner = document.createElement("div");
+    banner.className = "public-app-banner";
+    banner.setAttribute("role", "status");
+    banner.textContent = "临时公共上传已开放：TSV 字节将按批准的分析生命周期私密保存在 tang3；当前无登录或 TLS。请勿上传 PHI 或其他敏感数据。仅限研究使用，不用于临床诊断。";
+    const anchor = isLab ? $(".lab-bar") : $(".nav");
+    if (anchor) anchor.insertAdjacentElement("afterend", banner);
+    else document.body.prepend(banner);
+    $$(".status").forEach(node => { node.textContent = "Temporary public app · HTTP"; });
+    $$(".disclaimer").forEach(node => { node.textContent = "当前结果由 RNABag checkpoint 生成，仅限研究展示，不用于临床诊断。"; });
+    $$(".stage-subtitle").forEach(node => { node.textContent = node.textContent.replace("本地 API", "RNABag API").replace("本地 checkpoint", "RNABag checkpoint"); });
+  }
+
   ensureDemoControls();
   if (!publicPreview) apiBaseReady.then(() => {
     const sample = sampleData[currentTask().sampleKey];
@@ -541,6 +561,7 @@
     $$(".js-demo-run").forEach(button => button.addEventListener("click", runDemoAnalysis));
   }
   renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
+  applyPublicApp();
   applyPublicPreview();
   const initialStep = /^#step-(input|task|validate|result)$/.test(window.location.hash) ? window.location.hash.slice(1) : "step-input";
   setActiveStep(initialStep, "programmatic");

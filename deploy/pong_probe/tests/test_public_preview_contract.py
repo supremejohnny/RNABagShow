@@ -27,6 +27,11 @@ class TestPublicPreviewNginxContract(unittest.TestCase):
         with open(variant_js_path) as f:
             self.variant_js = f.read()
 
+        with open(os.path.join(repo_root, "frontend", "index.html")) as handle:
+            self.index_html = handle.read()
+        with open(os.path.join(repo_root, "frontend", "ranbag_lab.html")) as handle:
+            self.lab_html = handle.read()
+
     def test_probe_location_exists(self):
         self.assertIn("location = /probe/ping", self.conf)
 
@@ -96,6 +101,19 @@ class TestPublicPreviewNginxContract(unittest.TestCase):
 
     def test_frontend_public_preview_mode(self):
         self.assertIn('"public-preview"', self.runtime_js)
+
+    def test_preview_server_sets_no_store_at_server_level(self):
+        self.assertRegex(self.conf, r'add_header\s+Cache-Control\s+"no-store"\s+always;')
+        location_block = self._extract_location_block("/api/v1/")
+        self.assertIsNotNone(location_block)
+        self.assertNotIn("add_header Cache-Control", location_block)
+
+    def test_canonical_frontend_assets_use_shared_new_version(self):
+        for page in (self.index_html, self.lab_html):
+            self.assertIn("rnabag-runtime-config.js?v=20260721", page)
+            self.assertIn("rnabag-variant.js?v=20260721", page)
+            self.assertNotIn("20260717", page)
+            self.assertNotIn("20260720", page)
 
     # -- rnabag-variant.js public preview probe contract --
 

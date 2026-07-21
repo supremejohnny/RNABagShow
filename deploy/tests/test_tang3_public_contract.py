@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import unittest
@@ -137,7 +138,63 @@ class TestPublicProxyContract(unittest.TestCase):
 
     def test_health_and_standard_headers(self):
         self.assertIn("location = /healthz", self.conf)
+        self.assertRegex(self.conf, r'add_header\s+Cache-Control\s+"no-store"\s+always;')
         for header in ("Host", "X-Real-IP", "X-Forwarded-For", "X-Forwarded-Proto"):
             self.assertRegex(self.conf, rf"proxy_set_header {re.escape(header)}")
         self.assertNotIn("9000", self.conf)
         self.assertNotIn("5432", self.conf)
+
+
+class TestPublicFrontendContract(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.index = read("frontend", "index.html")
+        cls.lab = read("frontend", "ranbag_lab.html")
+        cls.runtime = read("frontend", "rnabag-runtime-config.js")
+        cls.variant = read("frontend", "rnabag-variant.js")
+
+    def test_canonical_entries_share_new_asset_version(self):
+        for page in (self.index, self.lab):
+            self.assertIn('rnabag-runtime-config.js?v=20260721', page)
+            self.assertIn('rnabag-variant.js?v=20260721', page)
+            self.assertNotIn('v=20260717', page)
+            self.assertNotIn('v=20260720', page)
+
+    def test_full_runtime_config_has_exact_immutable_public_host_allowlist(self):
+        self.assertIn('mode: "full"', self.runtime)
+        match = re.search(r"publicHosts: Object\.freeze\(\[(.*?)\]\)", self.runtime)
+        self.assertIsNotNone(match)
+        self.assertEqual(
+            json.loads(f"[{match.group(1)}]"),
+            ["101.133.158.8", "rnabag.com", "www.rnabag.com"],
+        )
+
+    def test_public_app_requires_exact_configured_host_membership(self):
+        self.assertIn('runtimeConfig.mode === "full"', self.variant)
+        self.assertIn('["http:", "https:"].includes(window.location.protocol)', self.variant)
+        self.assertIn('publicHosts.includes(window.location.hostname)', self.variant)
+        self.assertNotIn('!localHostname', self.variant)
+        self.assertIn('document.body.classList.toggle("public-app", publicApp)', self.variant)
+
+        match = re.search(r"publicHosts: Object\.freeze\(\[(.*?)\]\)", self.runtime)
+        configured = set(json.loads(f"[{match.group(1)}]"))
+        allowed = ["101.133.158.8", "rnabag.com", "www.rnabag.com"]
+        blocked = ["127.0.0.1", "localhost", "::1", "172.16.17.4", "100.113.222.1"]
+        for hostname in allowed:
+            self.assertIn(hostname, configured)
+        for hostname in blocked:
+            self.assertNotIn(hostname, configured)
+
+    def test_public_app_warning_and_controls_remain_enabled(self):
+        self.assertIn("临时公共上传已开放", self.variant)
+        self.assertIn("私密保存在 tang3", self.variant)
+        self.assertIn("无登录或 TLS", self.variant)
+        self.assertIn("PHI", self.variant)
+        self.assertIn("不用于临床诊断", self.variant)
+        self.assertIn('button.disabled = publicPreview', self.variant)
+        self.assertIn('button.textContent = publicPreview ? "推理服务暂未开放" : publicApp ? "提交公共分析"', self.variant)
+
+    def test_public_preview_still_gates_upload_and_inference(self):
+        self.assertIn('if (publicPreview) return false;', self.variant)
+        self.assertIn('if (publicPreview) return;', self.variant)
+        self.assertIn('input.disabled = true', self.variant)

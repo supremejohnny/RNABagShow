@@ -162,7 +162,10 @@ snippets under `deploy/public-proxy/`; it does not replace the packaged global
 `www.rnabag.com`, forwards frontend and API traffic to tang3, and has explicit
 upload, request, connection, and inference timeout limits. There is no login,
 TLS, DNS automation, or production claim. Public exposure remains a
-resource-abuse and data-handling risk despite the limits.
+resource-abuse and data-handling risk despite the limits. During this temporary
+validation, the frontend accepts TSV uploads and forwards them to tang3; the
+approved private persistence lifecycle remains on tang3, and users must not
+upload PHI or other sensitive data.
 
 Rollback order is `tang3-down.sh`, remove/disable the public-proxy Nginx site,
 then restore the approved static-only artifact and configuration from
