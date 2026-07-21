@@ -20,7 +20,8 @@ class TestTang3ComposeContract(unittest.TestCase):
     def test_cuda_runtime_and_pinned_torch(self):
         self.assertIn("nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04", self.dockerfile)
         self.assertIn('"torch==2.2.2"', self.dockerfile)
-        self.assertIn("cu121", self.dockerfile)
+        self.assertIn("RNABAG_PIP_INDEX_URL", self.dockerfile)
+        self.assertIn("PIP_RETRIES=10", self.dockerfile)
         self.assertNotIn("assert torch.cuda.is_available()", self.dockerfile)
 
     def test_one_gpu_is_reserved_and_logical_device_is_zero(self):
@@ -52,6 +53,10 @@ class TestTang3ComposeContract(unittest.TestCase):
         self.assertNotIn("minio", self.compose.lower())
         self.assertNotIn("ports:", self.compose)
 
+    def test_persistence_migrate_has_stable_fallback_image_name(self):
+        persistence = read("deploy", "compose.persistence.yml")
+        self.assertIn("image: rnabag-persistence:local", persistence)
+
 
 class TestTang3ScriptContract(unittest.TestCase):
     def test_bootstrap_defaults_and_secret_hygiene(self):
@@ -59,6 +64,7 @@ class TestTang3ScriptContract(unittest.TestCase):
         self.assertIn("/home/johnny/services/rnabag", script)
         self.assertIn("/mnt/nas/johnny/rnabag/RNABagShow", script)
         self.assertIn("chmod 600", script)
+        self.assertIn("https://mirrors.aliyun.com/pypi/simple", script)
         self.assertIn('chmod 700 "$CONFIG_DIR" "$DEPLOY_ROOT/postgres"', script)
         self.assertIn("Refusing to overwrite", script)
         self.assertNotRegex(script, r"echo\s+.*PASSWORD")
@@ -68,7 +74,20 @@ class TestTang3ScriptContract(unittest.TestCase):
         for required in ("docker info", "nvidia-smi", "PostgreSQL and MinIO must be running first", "RNABAG_CODE_DIR", "RNABAG_TEMP_DIR"):
             self.assertIn(required, script)
         self.assertIn("is not assigned to this host", script)
+        self.assertIn("compose_build_supported", script)
+        self.assertIn("DOCKER_BUILDKIT=0 docker build", script)
+        self.assertIn("--build-arg \"RNABAG_PIP_INDEX_URL=$PIP_INDEX_URL\"", script)
+        self.assertIn("--no-build", script)
         self.assertIn("compose.app-gpu.yml", script)
+
+    def test_persistence_start_has_old_buildx_fallback(self):
+        script = read("deploy", "persistence-up.sh")
+        self.assertIn("compose_build_supported", script)
+        self.assertIn("DOCKER_BUILDKIT=0 docker build", script)
+        self.assertIn("--tag rnabag-persistence:local", script)
+        self.assertIn("--build-arg \"RNABAG_PIP_INDEX_URL=$PIP_INDEX_URL\"", script)
+        self.assertIn("run --rm migrate", script)
+        self.assertNotIn("run --rm --build migrate", script)
 
     def test_smoke_uses_tailnet_bind_address(self):
         script = read("deploy", "tang3-smoke-test.sh")

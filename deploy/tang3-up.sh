@@ -9,6 +9,7 @@ CODE_DIR="${RNABAG_CODE_DIR-}"
 TEMP_DIR="${RNABAG_TEMP_DIR-}"
 BIND_IP="${RNABAG_APP_BIND_IP-}"
 GPU_ID="${RNABAG_GPU_DEVICE_ID-}"
+PIP_INDEX_URL="${RNABAG_PIP_INDEX_URL-}"
 
 [[ -f "$CONFIG_FILE" ]] || { echo "Tang3 config is missing: $CONFIG_FILE" >&2; exit 1; }
 config_value() { sed -n "s/^$1=//p" "$CONFIG_FILE" | tail -n 1; }
@@ -16,6 +17,8 @@ CODE_DIR="${CODE_DIR:-$(config_value RNABAG_CODE_DIR)}"
 TEMP_DIR="${TEMP_DIR:-$(config_value RNABAG_TEMP_DIR)}"
 BIND_IP="${BIND_IP:-$(config_value RNABAG_APP_BIND_IP)}"
 GPU_ID="${GPU_ID:-$(config_value RNABAG_GPU_DEVICE_ID)}"
+PIP_INDEX_URL="${PIP_INDEX_URL:-$(config_value RNABAG_PIP_INDEX_URL)}"
+PIP_INDEX_URL="${PIP_INDEX_URL:-https://pypi.org/simple}"
 [[ -d "$CODE_DIR" ]] || { echo "Code directory is missing: $CODE_DIR" >&2; exit 1; }
 [[ -d "$TEMP_DIR" ]] || { echo "Temporary directory is missing: $TEMP_DIR" >&2; exit 1; }
 [[ -d "$DEPLOY_ROOT/postgres" && -d "$DEPLOY_ROOT/object-storage" ]] || {
@@ -34,6 +37,13 @@ ip -4 address show | grep -Fq "inet $BIND_IP/" || {
 [[ "$GPU_ID" =~ ^[0-9]+$ ]] || { echo "RNABAG_GPU_DEVICE_ID must be numeric." >&2; exit 1; }
 command -v docker >/dev/null 2>&1 || { echo "docker is required." >&2; exit 1; }
 docker info >/dev/null 2>&1 || { echo "The current user cannot access Docker." >&2; exit 1; }
+compose_build_supported() {
+  local version
+  version="$(docker buildx version 2>/dev/null | awk 'NR == 1 { print $2 }')"
+  version="${version#v}"
+  [[ -n "$version" ]] || return 1
+  [[ "$(printf '%s\n' 0.17.0 "$version" | sort -V | head -n 1)" == "0.17.0" ]]
+}
 docker run --rm --gpus "device=$GPU_ID" nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi >/dev/null 2>&1 || {
   echo "Configured GPU is unavailable: $GPU_ID" >&2
   exit 1
@@ -47,6 +57,16 @@ grep -qx postgres <<<"$RUNNING_SERVICES" && grep -qx minio <<<"$RUNNING_SERVICES
 }
 
 export RNABAG_UID="$(id -u)" RNABAG_GID="$(id -g)" RNABAG_CODE_DIR TEMP_DIR RNABAG_TEMP_DIR="$TEMP_DIR" RNABAG_APP_BIND_IP="$BIND_IP" RNABAG_GPU_DEVICE_ID="$GPU_ID"
-docker compose --env-file "$CONFIG_FILE" -f "$SCRIPT_DIR/compose.app-gpu.yml" up -d --build --wait --force-recreate
+if compose_build_supported; then
+  docker compose --env-file "$CONFIG_FILE" -f "$SCRIPT_DIR/compose.app-gpu.yml" build app
+else
+  echo "Docker Buildx is older than 0.17; using the Docker legacy builder for the GPU image."
+  DOCKER_BUILDKIT=0 docker build \
+    --build-arg "RNABAG_PIP_INDEX_URL=$PIP_INDEX_URL" \
+    --file "$SCRIPT_DIR/Dockerfile.app-gpu" \
+    --tag rnabag-app-gpu:local \
+    "$SCRIPT_DIR/.."
+fi
+docker compose --env-file "$CONFIG_FILE" -f "$SCRIPT_DIR/compose.app-gpu.yml" up -d --no-build --wait --force-recreate
 docker compose --env-file "$CONFIG_FILE" -f "$SCRIPT_DIR/compose.app-gpu.yml" ps
 echo "RNABag GPU service is listening on http://$BIND_IP:8000/"

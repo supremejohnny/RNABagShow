@@ -95,9 +95,12 @@ services:
       RNABAG_S3_BUCKET: ${RNABAG_S3_BUCKET:?RNABAG_S3_BUCKET is required}
 
   migrate:
+    image: rnabag-persistence:local
     build:
       context: ..
       dockerfile: deploy/Dockerfile.persistence
+      args:
+        RNABAG_PIP_INDEX_URL: ${RNABAG_PIP_INDEX_URL:-https://pypi.org/simple}
     depends_on:
       postgres:
         condition: service_healthy

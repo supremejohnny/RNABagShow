@@ -148,6 +148,13 @@ The GPU app uses host networking and binds only to the configured tang3
 Tailscale address (`100.113.222.1` by default). PostgreSQL and MinIO remain
 published only on tang3 loopback. `tang3-status.sh` and `tang3-down.sh` inspect
 or stop only the GPU app; stop the GPU app before `persistence-down.sh`.
+Tang3 currently has Buildx 0.14 with Compose 2.40; the start scripts detect
+Buildx versions older than 0.17 and use Docker's legacy builder for the two
+local images, without changing system packages.
+The generated tang3 config uses Alibaba Cloud's public PyPI mirror for image
+builds because direct `files.pythonhosted.org` downloads time out from this
+host. Override `RNABAG_PIP_INDEX_URL` to use another trusted mirror; it is not a
+runtime service dependency and no credentials are supplied to it.
 
 The bastion install is a separate Nginx operation using
 `deploy/public-proxy/nginx-rnabag-public.conf`. It listens on HTTP port 80 for

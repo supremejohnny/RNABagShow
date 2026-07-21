@@ -1,10 +1,14 @@
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
+ARG RNABAG_PIP_INDEX_URL=https://pypi.org/simple
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DEFAULT_TIMEOUT=60 \
+    PIP_RETRIES=10
 
 WORKDIR /app
 
@@ -16,9 +20,11 @@ COPY backend/requirements.txt backend/requirements-persistence.txt /tmp/requirem
 
 RUN python3 -m pip install --upgrade pip \
     && python3 -m pip install \
-        --index-url https://download.pytorch.org/whl/cu121 \
+        --index-url "$RNABAG_PIP_INDEX_URL" \
         "torch==2.2.2" \
-    && python3 -m pip install -r /tmp/requirements/requirements.txt \
+    && python3 -m pip install \
+        --index-url "$RNABAG_PIP_INDEX_URL" \
+        -r /tmp/requirements/requirements.txt \
     && python3 -c "import boto3, fastapi, numpy, pandas, psycopg, torch, uvicorn"
 
 CMD ["python3", "-m", "uvicorn", "backend.app.main:app", "--host", "127.0.0.1", "--port", "8000", "--workers", "1"]

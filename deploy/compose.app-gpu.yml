@@ -6,6 +6,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.app-gpu
+      args:
+        RNABAG_PIP_INDEX_URL: ${RNABAG_PIP_INDEX_URL:-https://pypi.org/simple}
     restart: unless-stopped
     init: true
     network_mode: host
