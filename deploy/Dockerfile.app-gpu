@@ -18,7 +18,9 @@ RUN apt-get update \
 
 COPY backend/requirements.txt backend/requirements-persistence.txt /tmp/requirements/
 
-RUN python3 -m pip install --upgrade pip \
+RUN python3 -m pip install \
+        --index-url "$RNABAG_PIP_INDEX_URL" \
+        --upgrade pip \
     && python3 -m pip install \
         --index-url "$RNABAG_PIP_INDEX_URL" \
         "torch==2.2.2" \

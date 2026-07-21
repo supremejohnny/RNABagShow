@@ -21,6 +21,10 @@ class TestTang3ComposeContract(unittest.TestCase):
         self.assertIn("nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04", self.dockerfile)
         self.assertIn('"torch==2.2.2"', self.dockerfile)
         self.assertIn("RNABAG_PIP_INDEX_URL", self.dockerfile)
+        self.assertRegex(
+            self.dockerfile,
+            r'pip install\s+\\\n\s+--index-url "\$RNABAG_PIP_INDEX_URL"\s+\\\n\s+--upgrade pip',
+        )
         self.assertIn("PIP_RETRIES=10", self.dockerfile)
         self.assertNotIn("assert torch.cuda.is_available()", self.dockerfile)
 
