@@ -119,7 +119,7 @@ class TestPublicProxyContract(unittest.TestCase):
     def test_public_listener_and_upstream(self):
         self.assertIn("listen 80 default_server", self.conf)
         self.assertIn("server_name _ rnabag.com www.rnabag.com", self.conf)
-        self.assertIn("proxy_pass http://100.113.222.1:8000", self.conf)
+        self.assertIn("proxy_pass http://127.0.0.1:18000", self.conf)
         self.assertNotIn("root ", self.conf)
         self.assertNotIn("API_NOT_ENABLED", self.conf)
         self.assertNotIn("events {", self.conf)
@@ -166,7 +166,7 @@ class TestPublicFrontendContract(unittest.TestCase):
         self.assertIsNotNone(match)
         self.assertEqual(
             json.loads(f"[{match.group(1)}]"),
-            ["101.133.158.8", "rnabag.com", "www.rnabag.com"],
+            ["47.116.63.212", "rnabag.com", "www.rnabag.com"],
         )
 
     def test_public_app_requires_exact_configured_host_membership(self):
@@ -178,7 +178,7 @@ class TestPublicFrontendContract(unittest.TestCase):
 
         match = re.search(r"publicHosts: Object\.freeze\(\[(.*?)\]\)", self.runtime)
         configured = set(json.loads(f"[{match.group(1)}]"))
-        allowed = ["101.133.158.8", "rnabag.com", "www.rnabag.com"]
+        allowed = ["47.116.63.212", "rnabag.com", "www.rnabag.com"]
         blocked = ["127.0.0.1", "localhost", "::1", "172.16.17.4", "100.113.222.1"]
         for hostname in allowed:
             self.assertIn(hostname, configured)

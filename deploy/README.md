@@ -124,10 +124,11 @@ authentication, rate-limit, and network review.
 ## Temporary tang3 public-IP validation
 
 The user has authorized one temporary end-to-end validation at
-`http://101.133.158.8` while domain and ICP readiness are pending. Tang3 keeps
+`http://47.116.63.212` on SSH alias `bastionj` while domain and ICP readiness
+are pending. Tang3 keeps
 the code checkout on `/mnt/nas/johnny/rnabag/RNABagShow` and all mutable state
 under `/home/johnny/services/rnabag/{postgres,object-storage,runtime,backups}`.
-The bastion receives only the forwarding-only configuration in
+`bastionj` receives only the forwarding-only configuration in
 `deploy/public-proxy/`; it must never receive code, checkpoints, uploads,
 results, PostgreSQL files, or MinIO objects.
 
@@ -156,10 +157,11 @@ builds because direct `files.pythonhosted.org` downloads time out from this
 host. Override `RNABAG_PIP_INDEX_URL` to use another trusted mirror; it is not a
 runtime service dependency and no credentials are supplied to it.
 
-The bastion install is a separate Nginx operation using the site and HTTP-zone
+The `bastionj` install is a separate Nginx operation using the site and HTTP-zone
 snippets under `deploy/public-proxy/`; it does not replace the packaged global
 `nginx.conf`. It listens on HTTP port 80 for `_`, `rnabag.com`, and
-`www.rnabag.com`, forwards frontend and API traffic to tang3, and has explicit
+`www.rnabag.com`, forwards frontend and API traffic through the verified
+`127.0.0.1:18000` loopback forwarding listener to tang3, and has explicit
 upload, request, connection, and inference timeout limits. There is no login,
 TLS, DNS automation, or production claim. Public exposure remains a
 resource-abuse and data-handling risk despite the limits. During this temporary

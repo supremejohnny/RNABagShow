@@ -27,7 +27,7 @@ the tang3 Pong connectivity probe, which responds only with `pong\n` and
 performs no storage, no inference, and accepts no input. Public API exposure and
 a durable domain/TLS deployment remain unapproved separate phases. The user has
 additionally authorized one temporary end-to-end public-IP validation at
-`http://101.133.158.8`: bastion runs only the stateless proxy in
+`http://47.116.63.212`: `bastionj` runs only the stateless proxy in
 `deploy/public-proxy/`, while tang3 runs the GPU FastAPI app and approved
 loopback-only PostgreSQL/MinIO persistence. This validation has no login or TLS,
 must not be treated as production, and must be rolled back to the static preview
@@ -79,8 +79,10 @@ secrets, or environment files in the repository checkout.
   read-only-code tang3 application deployment. `deploy/bootstrap-tang3-config.sh`
   and `deploy/tang3-{up,status,down,smoke-test}.sh` manage that temporary
   validation without placing state or credentials in the checkout.
-- `deploy/public-proxy/`: temporary bastion forwarding-only Nginx configuration
-  for `http://101.133.158.8`; it contains no static files or API implementation.
+- `deploy/public-proxy/`: temporary `bastionj` forwarding-only Nginx
+  configuration for `http://47.116.63.212`; it contains no static files or API
+  implementation and uses the existing loopback forward at
+  `127.0.0.1:18000`.
 - `deploy/public-preview/` and `deploy/build-public-preview.sh`: allowlisted
   static-only public preview artifact and API-disabled Nginx configuration.
 - `deploy/pong_probe/server.py`: zero-dependency Python HTTP Pong connectivity
