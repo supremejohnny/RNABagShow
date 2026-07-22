@@ -1,0 +1,18 @@
+{
+  "task_id": "",
+  "state": "routed",
+  "risk_level": "",
+  "repair_cycles": 0,
+  "max_repair_cycles": 2,
+  "updated_at": "",
+  "artifacts": {
+    "request": null,
+    "spec": null,
+    "implementation_plan": null,
+    "acceptance": null,
+    "test_results": null,
+    "review": null,
+    "debug_report": null
+  },
+  "runs": []
+}

@@ -184,3 +184,5 @@ cython_debug/
 
 #opencode skill
 .opencode_harness/
+# Added by code-review-graph
+.code-review-graph/

@@ -15,6 +15,8 @@ fail() {
 }
 
 status=0
+CODING_MODEL="deepseek/deepseek-v4-pro"
+REVIEW_MODEL="doubaoglm/glm-5-2-260617"
 
 if command -v git >/dev/null 2>&1; then
   pass "git is available"
@@ -49,9 +51,24 @@ fi
 
 if models="$("$opencode_cli" models 2>/dev/null)"; then
   pass "opencode models succeeded"
-  if [[ -n "$models" ]]; then
-    printf '%s\n' "$models"
+
+  if grep -qFx "$CODING_MODEL" <<<"$models"; then
+    pass "coding model available: $CODING_MODEL"
   else
+    fail "coding model NOT found: $CODING_MODEL"
+    warn "Configure the deepseek provider in OpenCode before delegating tasks."
+    status=1
+  fi
+
+  if grep -qFx "$REVIEW_MODEL" <<<"$models"; then
+    pass "review/debug model available: $REVIEW_MODEL"
+  else
+    fail "review/debug model NOT found: $REVIEW_MODEL"
+    warn "Configure the doubaoglm provider in OpenCode before running review or debug phases."
+    status=1
+  fi
+
+  if [[ -z "$models" ]]; then
     warn "opencode models returned no model IDs"
   fi
 else

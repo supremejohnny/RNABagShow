@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "run_id": "",
+  "task_id": "",
+  "phase": "",
+  "agent": "",
+  "provider": "",
+  "model": "",
+  "started_at": "",
+  "finished_at": "",
+  "git_head": "",
+  "baseline_diff_hash": "",
+  "input_artifacts": [],
+  "output_artifacts": [],
+  "actions": [],
+  "commands": [],
+  "validation": [],
+  "usage": {
+    "input_tokens": null,
+    "output_tokens": null,
+    "reasoning_tokens": null,
+    "cache_read_tokens": null,
+    "cost": null
+  },
+  "result": "",
+  "failure_reason": "",
+  "next_action": ""
+}
