@@ -49,10 +49,6 @@
       }
     }
   };
-  if (!isLab) {
-    inputs.tissue.tasks = { originDetect: inputs.tissue.tasks.originDetect, origin: inputs.tissue.tasks.origin };
-    inputs.platelet.tasks = { cancer: inputs.platelet.tasks.cancer };
-  }
   const taskLabels = { cancer: "Cancer detection", origin: "Tissue origin · 36 classes", originDetect: "Origin and Detect", location: "Tumor localization · 5 classes" };
   const defaultTasks = { tissue: "originDetect", platelet: "cancer" };
   const state = { activeInput: "tissue", activeTask: defaultTasks.tissue, selectedFile: null, runToken: 0, analysisId: null, status: "ready", lastStatus: "" };
@@ -202,10 +198,43 @@
     state.activeTask = key;
     state.runToken += 1;
     renderTasks(); renderTaskDetail();
+  }
+  function confirmTask() {
     scrollToStep("step-validate");
   }
   function setValidation(message, kind = "") {
     $$(".js-validation").forEach(box => { box.className = `validation ${kind ? `show ${kind}` : ""}`; box.textContent = message; });
+  }
+  function updateFileUploadUI() {
+    const hasFile = !!state.selectedFile;
+    $$(".js-validate-submit").forEach(box => {
+      box.style.display = (hasFile && !publicPreview) ? "" : "none";
+    });
+    $$(".js-run").forEach(button => {
+      button.disabled = publicPreview || !hasFile;
+      button.textContent = publicPreview ? "推理服务暂未开放" : publicApp ? "提交公共分析" : "提交本地分析";
+    });
+    $$(".js-dropzone").forEach(dz => {
+      dz.classList.toggle("has-file", hasFile);
+      const icon = $(".drop-icon", dz);
+      const title = $("strong", dz);
+      const hint = $(".js-dropzone-hint", dz);
+      if (hasFile && state.selectedFile) {
+        if (icon) icon.textContent = "✓";
+        if (title) title.textContent = "文件格式验证完成";
+        if (hint) hint.textContent = `${state.selectedFile.name} · 可提交${publicApp ? "公共分析" : "本地分析"}`;
+      } else {
+        const def = dropzoneDefaultContent();
+        if (icon) icon.textContent = def.icon;
+        if (title) title.textContent = def.title;
+        if (hint) hint.textContent = def.hint;
+      }
+    });
+  }
+  function dropzoneDefaultContent() {
+    if (publicPreview) return { icon: "↑", title: "文件上传暂未开放", hint: "（公网预览不接收文件）" };
+    if (publicApp) return { icon: "↑", title: "拖入或选择 FPKM .tsv", hint: "浏览器先预检；提交后由 RNABag API 完整校验" };
+    return { icon: "↑", title: "拖入或选择 FPKM .tsv", hint: "浏览器先预检；提交后由本地 API 完整校验" };
   }
   function clearFile(announce = true) {
     state.selectedFile = null;
@@ -213,6 +242,7 @@
     $$(".js-file-input").forEach(input => { input.value = ""; });
     if (announce) setValidation("");
     setStepStates();
+    updateFileUploadUI();
   }
   function resetResult() {
     state.status = "ready";
@@ -223,9 +253,8 @@
       chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : publicApp ? "选择 TSV 并提交临时公共分析，查看完整预处理与 checkpoint 输出。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`;
     });
     $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Expected output</small><strong>${escapeHtml(currentTask().expected)}</strong>`; });
-    $$(".js-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "推理服务暂未开放" : publicApp ? "提交公共分析" : "提交本地分析"; });
     $$(".js-demo-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "Demo 暂未开放" : "Use Demo Data"; });
-    updateContext(); setStepStates();
+    updateContext(); setStepStates(); updateFileUploadUI();
   }
   function setRunState(running, label = publicApp ? "提交公共分析" : "提交本地分析") {
     $$(".js-run").forEach(button => { button.disabled = publicPreview || running; button.textContent = publicPreview ? "推理服务暂未开放" : label; });
@@ -365,10 +394,11 @@
       setDemoRunState(false);
     }
   }
-  async function validateFile(file, { navigate = true } = {}) {
+  async function validateFile(file, { navigate = false } = {}) {
     if (publicPreview) return false;
     if (!file) return false;
     state.selectedFile = null;
+    setStepStates(); updateFileUploadUI();
     if (!file.name.toLowerCase().endsWith(".tsv")) { setValidation("格式不匹配：请选择 .tsv 文件，而不是 CSV 或 Excel 文件。", "warn"); return false; }
     const text = await file.slice(0, 160000).text();
     const lines = text.split(/\r?\n/).filter(line => line.trim());
@@ -386,7 +416,7 @@
     if (issues.length) { setValidation(`${file.name} · ${issues.join("；")}`, "warn"); return false; }
     state.selectedFile = file;
     setValidation(`✓ 基础格式通过 · ${headers.length - 1} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - dataStart))} 个基因行 · 提交后将完整校验`, "ok");
-    setStepStates(); updateContext();
+    setStepStates(); updateContext(); updateFileUploadUI();
     if (navigate) scrollToStep("step-result");
     return true;
   }
@@ -497,10 +527,6 @@
     else document.body.prepend(banner);
     $$(".status").forEach(node => { node.textContent = "Public preview"; });
     $$(".disclaimer").forEach(node => { node.textContent = "公网预览不接收或保存任何样本数据；页面内容仅限研究展示，不用于临床诊断。"; });
-    $$(".js-dropzone").forEach(dropzone => {
-      const title = $("strong", dropzone);
-      if (title) title.textContent = "文件上传暂未开放";
-    });
     $$(".stage-subtitle").forEach(node => {
       node.textContent = node.textContent.replace("本地 API", "后续推理服务").replace("提交后", "服务开放后");
     });
@@ -531,6 +557,7 @@
         })
         .finally(() => clearTimeout(timer));
     }
+    updateFileUploadUI();
   }
 
   function applyPublicApp() {
@@ -550,6 +577,7 @@
     $$(".stage-subtitle, .js-dropzone span, .story-chapter p").forEach(node => {
       node.textContent = node.textContent.replace("本地 API", "RNABag API").replace("本地 checkpoint", "RNABag checkpoint");
     });
+    updateFileUploadUI();
   }
 
   ensureDemoControls();
@@ -562,6 +590,7 @@
     $$(".js-run").forEach(button => button.addEventListener("click", runAnalysis));
     $$(".js-demo-run").forEach(button => button.addEventListener("click", runDemoAnalysis));
   }
+  $$(".js-task-confirm").forEach(button => button.addEventListener("click", confirmTask));
   renderInputs(); renderTasks(); renderTaskDetail(); bindFileControls(); bindNavigation(); bindScrollState(); bindOverviewLightbox();
   applyPublicApp();
   applyPublicPreview();
