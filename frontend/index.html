@@ -59,6 +59,10 @@
     @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;}}
     /* Let desktop Validation fill the stage with a 12px inset; optional controls scroll internally. */
     @media(min-width:760px){
+      .stage-panel[data-panel-step="step-task"] .task-stage{display:grid;grid-template-columns:minmax(190px,.72fr) minmax(0,1.28fr);grid-template-areas:"label label" "list detail";column-gap:18px;align-items:start;}
+      .stage-panel[data-panel-step="step-task"] .task-stage>.side-label{grid-area:label;}
+      .stage-panel[data-panel-step="step-task"] .js-task-list{grid-area:list;}
+      .stage-panel[data-panel-step="step-task"] .task-detail{grid-area:detail;margin-top:0;}
       .stage-panel[data-panel-step="step-validate"] .stage-panel-body{display:flex;flex-direction:column;padding:12px;}
       .stage-panel[data-panel-step="step-validate"] .stage-title,.stage-panel[data-panel-step="step-validate"] .stage-subtitle{flex:none;}
       .stage-panel[data-panel-step="step-validate"] .validate-stage{flex:1;height:auto;min-height:0;grid-template-rows:auto auto auto minmax(0,1fr);}
