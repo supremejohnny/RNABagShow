@@ -9,6 +9,9 @@ sampledata/*.numbers
 /opencode_harness
 .agent-runs/
 
+# Local validation datasets and GEO upload fixtures
+/validate/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
