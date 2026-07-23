@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenCode Harness V2"
-  short_description: "Artifact-driven multi-role AI workflow with risk-based routing"
-  default_prompt: "Use $opencode-harness to classify this task risk, delegate implementation to OpenCode, and independently review and validate the result."

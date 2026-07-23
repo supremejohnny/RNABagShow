@@ -5,6 +5,8 @@ sampledata/*.numbers
 
 # Local agent continuity notes and machine-specific run state
 /harness/
+/opencode-harness/
+/opencode_harness
 .agent-runs/
 
 # Byte-compiled / optimized / DLL files
