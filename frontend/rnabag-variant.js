@@ -51,7 +51,7 @@
   };
   const taskLabels = { cancer: "Cancer detection", origin: "Tissue origin · 36 classes", originDetect: "Origin and Detect", location: "Tumor localization · 5 classes" };
   const defaultTasks = { tissue: "originDetect", platelet: "cancer" };
-  const state = { activeInput: "tissue", activeTask: defaultTasks.tissue, selectedFile: null, runToken: 0, analysisId: null, status: "ready", lastStatus: "" };
+  const state = { activeInput: "tissue", activeTask: defaultTasks.tissue, selectedFile: null, runToken: 0, preflightToken: 0, analysisId: null, status: "ready", lastStatus: "" };
   let programmaticStep = null;
   let programmaticSettleTimer = 0;
 
@@ -237,6 +237,7 @@
     return { icon: "↑", title: "拖入或选择 FPKM .tsv", hint: "浏览器先预检；提交后由本地 API 完整校验" };
   }
   function clearFile(announce = true) {
+    state.preflightToken += 1;
     state.selectedFile = null;
     state.analysisId = null;
     $$(".js-file-input").forEach(input => { input.value = ""; });
@@ -397,15 +398,19 @@
   async function validateFile(file, { navigate = false } = {}) {
     if (publicPreview) return false;
     if (!file) return false;
+    const preflightToken = ++state.preflightToken;
     state.selectedFile = null;
+    setValidation("");
     setStepStates(); updateFileUploadUI();
     if (!file.name.toLowerCase().endsWith(".tsv")) { setValidation("格式不匹配：请选择 .tsv 文件，而不是 CSV 或 Excel 文件。", "warn"); return false; }
     const text = await file.slice(0, 160000).text();
+    if (preflightToken !== state.preflightToken) return false;
     const lines = text.split(/\r?\n/).filter(line => line.trim());
     const headerIndex = lines.slice(0, 5).findIndex(line => ["geneid", "gene_id", "gene"].includes(((line.split("\t")[0] || "").replace(/^\uFEFF/, "").trim().toLowerCase())));
     const headers = (lines[headerIndex >= 0 ? headerIndex : 0] || "").split("\t");
+    const sampleCount = headers.slice(1).filter(header => header.trim()).length;
     const hasGene = ["geneid", "gene_id", "gene"].includes((headers[0] || "").replace(/^\uFEFF/, "").trim().toLowerCase());
-    const tabular = headers.length > 1;
+    const tabular = sampleCount > 0;
     let numeric = true;
     const dataStart = headerIndex >= 0 ? headerIndex + 1 : 1;
     lines.slice(dataStart, dataStart + 20).forEach(line => line.split("\t").slice(1).forEach(value => { if (value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0)) numeric = false; }));
@@ -415,7 +420,7 @@
     if (!numeric) issues.push("检测到非数值或负表达值");
     if (issues.length) { setValidation(`${file.name} · ${issues.join("；")}`, "warn"); return false; }
     state.selectedFile = file;
-    setValidation(`✓ 基础格式通过 · ${headers.length - 1} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - dataStart))} 个基因行 · 提交后将完整校验`, "ok");
+    setValidation(`✓ 基础格式通过 · ${sampleCount} 个样本列 · 已检查前 ${Math.min(20, Math.max(0, lines.length - dataStart))} 个基因行 · 提交后将完整校验`, "ok");
     setStepStates(); updateContext(); updateFileUploadUI();
     if (navigate) scrollToStep("step-result");
     return true;
