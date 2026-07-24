@@ -23,6 +23,7 @@ PLATELET_HEALTHY_THRESHOLD = 0.003955459
 MODEL_TASKS = {
     "tissue_cancer_detection": ("tissue_cancer_detect", "Tissue_cancer_detect.ckpt"),
     "tissue_origin_identification": ("tissue_origin", "Tissue_origin.ckpt"),
+    "plasma_cancer_detection": ("plasma_cancer_detect", "Plasma_cancer_detect.ckpt"),
     "platelet_cancer_detection": ("platelet_cancer_detect", "Platelet_cancer_detect.ckpt"),
     "platelet_tumor_localization": ("platelet_tumor_local", "Platelet_tumor_local.ckpt"),
 }

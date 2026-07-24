@@ -38,8 +38,8 @@
       }
     },
     plasma: {
-      label: "plasma", subtitle: "血浆 RNA", icon: "PL", enabled: false,
-      tasks: { cancer: { title: "Plasma Cancer Detection", apiTask: "plasma_cancer_detection", sampleKey: "plasma", description: "识别 plasma-derived RNA expression matrix 中的癌症相关信号，为 minimally invasive liquid-biopsy 研究提供分层依据。", specs: ["Input: plasma-derived RNA", "Status: coming soon"], expected: "Coming soon", type: "binary" } }
+      label: "plasma", subtitle: "血浆 RNA", icon: "PL", enabled: true,
+      tasks: { cancer: { title: "Plasma Cancer Detection", apiTask: "plasma_cancer_detection", sampleKey: "plasma", description: "识别 plasma-derived RNA expression matrix 中的癌症相关信号，为 minimally invasive liquid-biopsy 研究提供分层依据。本任务仅供研究使用，不用于临床诊断，且当前无内置示例数据。", specs: ["Input: plasma-derived RNA", "Head: binary classification", "Labels: Healthy / Cancer", "Representation: 4096 HVGs", "Output: class probability"], expected: "Healthy / Cancer", type: "binary" } }
     },
     platelet: {
       label: "platelet", subtitle: "血小板 RNA", icon: "PT", enabled: true,
@@ -59,6 +59,7 @@
     return String(value).replace(/[&<>'"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;" })[character]);
   }
   function currentTask() { return inputs[state.activeInput].tasks[state.activeTask]; }
+  function currentTaskHasDemo() { return Boolean(sampleData[currentTask().sampleKey]); }
   function stepNode(step) { return document.getElementById(step); }
   function panelNode(step) { return $(`[data-panel-step="${step}"]`); }
   function ui(step, selector) { return $(selector, panelNode(step) || document); }
@@ -168,21 +169,34 @@
     $$(".js-modality-help").forEach(node => { node.textContent = `一个文件中请勿混入其他模态；该任务只接受 ${input.subtitle}。`; });
     $$(".js-expected-output").forEach(node => { node.textContent = task.expected; });
     const sample = sampleData[task.sampleKey];
-    $$(".js-sample-description").forEach(node => { node.textContent = publicPreview ? "公网预览阶段不提供示例数据下载或推理。" : `${task.title} 使用已验证的 ${sample.label} ${sample.sampleCount}-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
-    $$(".js-sample-link").forEach(link => {
-      if (publicPreview) {
+    if (sample) {
+      $$(".js-sample-description").forEach(node => { node.textContent = publicPreview ? "公网预览阶段不提供示例数据下载或推理。" : `${task.title} 使用已验证的 ${sample.label} ${sample.sampleCount}-sample FPKM matrix，可用于检查数据结构与快速演示。`; });
+      $$(".js-sample-link").forEach(link => {
+        if (publicPreview) {
+          link.removeAttribute("href");
+          link.removeAttribute("download");
+          link.setAttribute("aria-disabled", "true");
+          const label = $("span", link);
+          if (label) label.textContent = "Example dataset 暂未开放";
+        } else {
+          link.href = apiUrl(sample.apiPath);
+          link.download = sample.filename;
+          link.removeAttribute("aria-disabled");
+        }
+      });
+      $$(".js-demo-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "Demo 暂未开放" : "Use Demo Data"; button.setAttribute("aria-label", `Use Demo Data for ${task.title}`); });
+    } else {
+      $$(".js-sample-description").forEach(node => { node.textContent = "Plasma 示例数据暂未提供，请使用自有 FPKM TSV 文件进行分析。"; });
+      $$(".js-sample-link").forEach(link => {
         link.removeAttribute("href");
         link.removeAttribute("download");
         link.setAttribute("aria-disabled", "true");
         const label = $("span", link);
-        if (label) label.textContent = "Example dataset 暂未开放";
-      } else {
-        link.href = apiUrl(sample.apiPath);
-        link.download = sample.filename;
-        link.removeAttribute("aria-disabled");
-      }
-    });
-    $$(".js-demo-run").forEach(button => { button.setAttribute("aria-label", `Use Demo Data for ${task.title}`); });
+        if (label) label.textContent = "示例数据暂未开放";
+      });
+      $$(".js-demo-run").forEach(button => { button.disabled = true; button.textContent = "Demo 暂未提供"; button.setAttribute("aria-label", "Plasma 示例数据暂未提供"); });
+    }
+    $$(".js-demo-hint").forEach(hint => { hint.textContent = sample ? (publicPreview ? "（公网预览不接收文件）" : "（没有文件？试试我们的 demo data↓）") : "（请使用自有 FPKM TSV 文件进行分析）"; });
     clearFile(false);
     resetResult();
     updateContext();
@@ -254,15 +268,16 @@
       chart.innerHTML = `<div class="empty-chart"><div class="empty-orbit"></div><p>${publicPreview ? "公网预览仅展示产品与任务界面，暂不接收文件或运行推理。" : publicApp ? "选择 TSV 并提交临时公共分析，查看完整预处理与 checkpoint 输出。" : "选择 TSV 并提交本地分析，查看完整预处理与 checkpoint 输出。"}</p></div>`;
     });
     $$(".js-result-summary").forEach(box => { box.innerHTML = `<small>Expected output</small><strong>${escapeHtml(currentTask().expected)}</strong>`; });
-    $$(".js-demo-run").forEach(button => { button.disabled = publicPreview; button.textContent = publicPreview ? "Demo 暂未开放" : "Use Demo Data"; });
+    const hasDemo = currentTaskHasDemo();
+    $$(".js-demo-run").forEach(button => { button.disabled = publicPreview || !hasDemo; button.textContent = publicPreview ? "Demo 暂未开放" : (!hasDemo ? "Demo 暂未提供" : "Use Demo Data"); });
     updateContext(); setStepStates(); updateFileUploadUI();
   }
   function setRunState(running, label = publicApp ? "提交公共分析" : "提交本地分析") {
     $$(".js-run").forEach(button => { button.disabled = publicPreview || running; button.textContent = publicPreview ? "推理服务暂未开放" : label; });
-    $$(".js-demo-run").forEach(button => { button.disabled = publicPreview || running; });
+    $$(".js-demo-run").forEach(button => { button.disabled = publicPreview || running || !currentTaskHasDemo(); });
   }
   function setDemoRunState(running, label = "Use Demo Data") {
-    $$(".js-demo-run").forEach(button => { button.disabled = running; button.textContent = label; });
+    $$(".js-demo-run").forEach(button => { button.disabled = running || !currentTaskHasDemo(); button.textContent = label; });
   }
   function showProgress(message) {
     $$(".js-result-title").forEach(node => { node.textContent = publicApp ? "Public analysis" : "Local analysis"; });
@@ -452,9 +467,13 @@
   }
   function ensureDemoControls() {
     $$(".js-dropzone").forEach(dropzone => {
-      if ($(".demo-hint", dropzone)) return;
+      const existingHint = $(".demo-hint", dropzone);
+      if (existingHint) {
+        existingHint.classList.add("js-demo-hint");
+        return;
+      }
       const hint = document.createElement("span");
-      hint.className = "demo-hint";
+      hint.className = "demo-hint js-demo-hint";
       hint.textContent = publicPreview ? "（公网预览不接收文件）" : "（没有文件？试试我们的 demo data↓）";
       dropzone.append(hint);
     });
@@ -587,8 +606,11 @@
 
   ensureDemoControls();
   if (!publicPreview) apiBaseReady.then(() => {
-    const sample = sampleData[currentTask().sampleKey];
-    $$(".js-sample-link").forEach(link => { link.href = apiUrl(sample.apiPath); });
+    const task = currentTask();
+    const sample = sampleData[task.sampleKey];
+    if (sample) {
+      $$(".js-sample-link").forEach(link => { link.href = apiUrl(sample.apiPath); });
+    }
     if (apiBaseUrl && $(".status")) $(".status").textContent = "Local API · 127.0.0.1:8000";
   });
   if (!publicPreview) {

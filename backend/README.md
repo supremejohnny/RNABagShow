@@ -168,8 +168,11 @@ changed only after measuring model memory and latency on that server.
 The synonym rule is the current recommended showcase policy and must be
 revisited with the team's future golden dataset. See `RNABag/data/README.md`.
 
-Plasma remains disabled even though a copied checkpoint exists; its public
-workflow will be enabled only after its input/sample contract is reviewed.
+Plasma cancer detection is now enabled as a research-use binary checkpoint task.
+Its `Plasma_cancer_detect.ckpt` produces `Healthy` / `Cancer` labels in the
+existing binary order. No bundled demo dataset is available for plasma; the
+`GET /api/v1/demo-data/plasma` endpoint intentionally remains 404 and the
+canonical frontend disables plasma demo controls.
 
 ## Persistent data contract
 

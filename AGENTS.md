@@ -138,8 +138,13 @@ Enabled API tasks:
 - `tissue_origin_and_cancer_detection`
 - `platelet_cancer_detection`
 - `platelet_tumor_localization`
+- `plasma_cancer_detection`
 
-Plasma remains disabled even though a checkpoint file is present. Platelet
+Plasma cancer detection is now enabled as a research-use binary checkpoint task.
+It uses the `Plasma_cancer_detect.ckpt` checkpoint with argmax decoding and
+returns `Healthy` / `Cancer` labels. No bundled demo dataset is available for
+plasma; `GET /api/v1/demo-data/plasma` remains 404 and the frontend disables
+plasma demo controls. Platelet
 cancer detection uses the legacy Healthy-probability threshold `0.003955459`;
 other tasks use argmax. Label order in `backend/app/catalog.py` must continue to
 match `RNABag/infer_code/data/id_to_name.py` and checkpoint training.

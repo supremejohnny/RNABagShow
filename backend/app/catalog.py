@@ -75,10 +75,9 @@ TASKS: dict[str, dict[str, Any]] = {
     },
     "plasma_cancer_detection": {
         "modality": "plasma",
-        "enabled": False,
+        "enabled": True,
         "labels": ["Healthy", "Cancer"],
         "output_type": "binary",
-        "unavailable_reason": "Plasma inference is not available in the local prototype.",
     },
     "platelet_cancer_detection": {
         "modality": "platelet",

@@ -9,6 +9,7 @@ import numpy as np
 
 from backend.app.inference import (
     InputValidationError,
+    MODEL_TASKS,
     inspect_tsv,
     load_gene_resources,
     preprocess_tsv,
@@ -197,6 +198,81 @@ class InputInspectionTests(unittest.TestCase):
         self.assertEqual(len(result["predictions"]), 3)
         for prediction in result["predictions"]:
             self.assertIn(prediction["predicted_label"], {"Healthy", "Cancer"})
+            self.assertAlmostEqual(
+                sum(score["score"] for score in prediction["scores"]),
+                1.0,
+                places=6,
+            )
+
+    def test_plasma_cancer_detection_is_mapped_to_checkpoint(self) -> None:
+        self.assertIn("plasma_cancer_detection", MODEL_TASKS)
+        legacy_task, checkpoint_name = MODEL_TASKS["plasma_cancer_detection"]
+        self.assertEqual(checkpoint_name, "Plasma_cancer_detect.ckpt")
+        self.assertEqual(legacy_task, "plasma_cancer_detect")
+
+    def test_plasma_prediction_uses_binary_result_contract(self) -> None:
+        path = SAMPLE_DIR / "Platelet_sample_to_joh.tsv"
+
+        def fake_predict(matrix: np.ndarray, task: str):
+            self.assertEqual(task, "plasma_cancer_detection")
+            self.assertEqual(matrix.shape, (3, 4096))
+            return (
+                [
+                    {
+                        "predicted_label": "Healthy",
+                        "scores": [
+                            {"label": "Healthy", "score": 0.85},
+                            {"label": "Cancer", "score": 0.15},
+                        ],
+                    }
+                    for _ in range(matrix.shape[0])
+                ],
+                "Plasma_cancer_detect-test",
+            )
+
+        with patch("backend.app.inference._predict", side_effect=fake_predict):
+            result = run_checkpoint_inference(
+                path,
+                filename=path.name,
+                task="plasma_cancer_detection",
+            )
+
+        self.assertEqual(result["schema_version"], 1)
+        self.assertEqual(result["mode"], "checkpoint")
+        self.assertEqual(result["task"], "plasma_cancer_detection")
+        self.assertEqual(result["modality"], "plasma")
+        self.assertIn("Plasma_cancer_detect", result["model_version"])
+        self.assertEqual(len(result["predictions"]), 3)
+        self.assertEqual(
+            [prediction["sample_id"] for prediction in result["predictions"]],
+            result["input_summary"]["sample_ids"],
+        )
+        for prediction in result["predictions"]:
+            self.assertIn(prediction["predicted_label"], {"Healthy", "Cancer"})
+            self.assertEqual(len(prediction["scores"]), 2)
+            self.assertAlmostEqual(
+                sum(score["score"] for score in prediction["scores"]),
+                1.0,
+                places=6,
+            )
+
+    def test_plasma_real_checkpoint_result_contract(self) -> None:
+        path = SAMPLE_DIR / "Platelet_sample_to_joh.tsv"
+        result = run_checkpoint_inference(
+            path,
+            filename=path.name,
+            task="plasma_cancer_detection",
+        )
+
+        self.assertEqual(result["schema_version"], 1)
+        self.assertEqual(result["mode"], "checkpoint")
+        self.assertEqual(result["task"], "plasma_cancer_detection")
+        self.assertEqual(result["modality"], "plasma")
+        self.assertIn("Plasma_cancer_detect", result["model_version"])
+        self.assertEqual(len(result["predictions"]), 3)
+        for prediction in result["predictions"]:
+            self.assertIn(prediction["predicted_label"], {"Healthy", "Cancer"})
+            self.assertEqual(len(prediction["scores"]), 2)
             self.assertAlmostEqual(
                 sum(score["score"] for score in prediction["scores"]),
                 1.0,

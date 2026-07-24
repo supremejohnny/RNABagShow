@@ -168,6 +168,37 @@ class PersistentApiTests(unittest.TestCase):
 
             self.assertEqual(client.get("/api/v1/demo-data/plasma").status_code, 404)
 
+    def test_plasma_cancer_detection_is_enabled_in_catalog_and_accepts_upload(self) -> None:
+        with (
+            patch.dict(os.environ, {"RNABAG_PERSISTENCE_ENABLED": "false"}),
+            TestClient(main.app) as client,
+        ):
+            tasks_response = client.get("/api/v1/tasks")
+            self.assertEqual(tasks_response.status_code, 200)
+            tasks = {item["task"]: item for item in tasks_response.json()["tasks"]}
+            self.assertIn("plasma_cancer_detection", tasks)
+            self.assertTrue(tasks["plasma_cancer_detection"]["enabled"])
+            self.assertEqual(tasks["plasma_cancer_detection"]["modality"], "plasma")
+            self.assertEqual(tasks["plasma_cancer_detection"]["output_type"], "binary")
+
+            response = client.post(
+                "/api/v1/analyses?task=plasma_cancer_detection",
+                content=b"GeneID\tSample\n1\t1\n",
+                headers={
+                    "Content-Type": "text/tab-separated-values",
+                    "X-RNABag-Filename": "test.tsv",
+                },
+            )
+            self.assertEqual(response.status_code, 202, response.text)
+
+    def test_tissue_and_platelet_demo_data_still_returns_200(self) -> None:
+        with (
+            patch.dict(os.environ, {"RNABAG_PERSISTENCE_ENABLED": "false"}),
+            TestClient(main.app) as client,
+        ):
+            self.assertEqual(client.get("/api/v1/demo-data/tissue").status_code, 200)
+            self.assertEqual(client.get("/api/v1/demo-data/platelet").status_code, 200)
+
     def test_persistent_upload_worker_result_and_purge(self) -> None:
         fake_backend = _FakePersistenceBackend()
         environment = {
